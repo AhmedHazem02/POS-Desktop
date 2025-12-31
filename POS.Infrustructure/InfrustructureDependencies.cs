@@ -9,6 +9,7 @@ namespace POS.Infrustructure
         public static IServiceCollection AddInfrustructureDependencies(this IServiceCollection services)
         {
             services.AddScoped<IExcelService, ExcelService>();
+            services.AddScoped<ICustomerLedgerService, CustomerLedgerService>();
             return services;
         }
     }

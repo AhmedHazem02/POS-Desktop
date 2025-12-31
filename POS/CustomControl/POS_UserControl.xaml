@@ -311,6 +311,49 @@
                             </Border>
                         </Grid>
 
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="العميل" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <TextBox Style="{StaticResource PosTextBoxStyle}"
+                                     Text="{Binding CustomerSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     TextAlignment="Right"
+                                     FlowDirection="RightToLeft"
+                                     Height="44"
+                                     VerticalContentAlignment="Center"
+                                     Padding="12,0"
+                                     FontSize="16"
+                                     Foreground="#111827"
+                                     CaretBrush="#111827"
+                                     materialDesign:HintAssist.Hint="ابحث باسم العميل أو رقم الهاتف"
+                                     Margin="0,0,0,8" />
+                            <ComboBox ItemsSource="{Binding CustomersView}"
+                                      SelectedItem="{Binding SelectedCustomer}"
+                                      MinHeight="44"
+                                      IsEditable="True"
+                                      IsReadOnly="True"
+                                      StaysOpenOnEdit="True"
+                                      Text="{Binding SelectedCustomer.Name, Mode=OneWay}"
+                                      TextSearch.TextPath="Name"
+                                      FlowDirection="RightToLeft"
+                                      VerticalContentAlignment="Center"
+                                      Padding="6,0">
+                                <ComboBox.Resources>
+                                    <Style TargetType="TextBox">
+                                        <Setter Property="TextAlignment" Value="Right" />
+                                    </Style>
+                                </ComboBox.Resources>
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Phone}"
+                                                       FontSize="11"
+                                                       Foreground="#64748B" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
                         <Border Background="#F8FAFC" Padding="16" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1">
                             <StackPanel>
                                 <!-- اسم المنتج -->
@@ -614,7 +657,7 @@
                             Background="#4CAF50"
                             Foreground="White"
                             Command="{Binding CompletePaymentCommand}"
-                            IsEnabled="{Binding IsPaymentComplete}"
+                            IsEnabled="{Binding CanCompletePayment}"
                             Margin="0,0,0,8">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <materialDesign:PackIcon Kind="CheckCircle" Width="24" Height="24" Margin="0,0,8,0" />

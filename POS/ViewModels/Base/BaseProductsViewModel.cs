@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using POS.Application.Contracts.Services;
 using POS.Domain.Models;
 using POS.Domain.Models.Products;
 using POS.Persistence.Context;
@@ -8,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -148,6 +150,44 @@ namespace POS.ViewModels.Base
             {
                 _customers = value;
                 OnPropertyChanged(nameof(Customers));
+                if (_customers == null)
+                {
+                    CustomersView = null;
+                    return;
+                }
+
+                CustomersView = CollectionViewSource.GetDefaultView(_customers);
+                if (CustomersView != null)
+                {
+                    CustomersView.Filter = FilterCustomer;
+                    CustomersView.Refresh();
+                }
+            }
+        }
+
+        private ICollectionView _customersView;
+        public ICollectionView CustomersView
+        {
+            get { return _customersView; }
+            private set
+            {
+                _customersView = value;
+                OnPropertyChanged(nameof(CustomersView));
+            }
+        }
+
+        private string _customerSearchText;
+        public string CustomerSearchText
+        {
+            get { return _customerSearchText; }
+            set
+            {
+                if (_customerSearchText != value)
+                {
+                    _customerSearchText = value;
+                    OnPropertyChanged(nameof(CustomerSearchText));
+                    CustomersView?.Refresh();
+                }
             }
         }
 
@@ -812,6 +852,13 @@ if (_quantity != value)
             LoadSuppliers();
             LoadCustomers();
             LoadCategoriesWithProducts();
+
+            App.CustomersChanged += OnCustomersChanged;
+        }
+
+        private void OnCustomersChanged()
+        {
+            LoadCustomers();
         }
         private void LoadWarehouses()
         {
@@ -835,11 +882,48 @@ if (_quantity != value)
         }
         private void LoadCustomers()
         {
-            IQueryable<Customer> query = _dbContext.Customers; // Initial query
+            var ledgerService = App.ServiceProvider.GetRequiredService<ICustomerLedgerService>();
+            var defaultCustomer = ledgerService.EnsureDefaultCustomer();
+            var currentCustomerId = SelectedCustomer?.Id;
+
+            IQueryable<Customer> query = _dbContext.Customers.Where(c => !c.IsArchived); // Initial query
 
             ObservableCollection<Customer> customers = new ObservableCollection<Customer>(query.ToList());
 
             Customers = customers;
+            if (currentCustomerId.HasValue)
+            {
+                var existing = Customers.FirstOrDefault(c => c.Id == currentCustomerId.Value);
+                if (existing != null)
+                {
+                    SelectedCustomer = existing;
+                    return;
+                }
+            }
+
+            if (defaultCustomer != null)
+            {
+                SelectedCustomer = Customers.FirstOrDefault(c => c.Id == defaultCustomer.Id)
+                    ?? Customers.FirstOrDefault(c => c.IsDefault)
+                    ?? Customers.FirstOrDefault();
+            }
+        }
+
+        private bool FilterCustomer(object item)
+        {
+            if (item is not Customer customer)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(CustomerSearchText))
+            {
+                return true;
+            }
+
+            var term = CustomerSearchText.Trim().ToLowerInvariant();
+            return (customer.Name?.ToLowerInvariant().Contains(term) ?? false)
+                || (customer.Phone?.ToLowerInvariant().Contains(term) ?? false);
         }
         private void LoadCategoriesWithProducts()
         {

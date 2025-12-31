@@ -21,6 +21,7 @@ namespace POS.Persistence.Context
         public DbSet<Product> Products { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<CustomerLedgerEntry> CustomerLedgerEntries { get; set; }
 
         public DbSet<ReadyProduct> ReadyProducts { get; set; }
         public DbSet<ReadyProductItem> ReadyProductItems { get; set; }

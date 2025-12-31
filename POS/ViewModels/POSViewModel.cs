@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using POS.Application.Contracts.Services;
+using POS.Domain.Models.Payments.PaymentMethods;
 using POS.Domain.Models;
 using POS.Domain.Models.Payments;
 using POS.Domain.Models.Products;
@@ -19,6 +22,7 @@ namespace POS.ViewModels
 {
     public class POSViewModel : BaseProductsViewModel
     {
+        private readonly ICustomerLedgerService _ledgerService;
         private DateTime _purchaseDate = DateTime.Now;
         private DateTime _paymentDate = DateTime.Now;
         public DateTime PurchaseDate
@@ -213,6 +217,8 @@ namespace POS.ViewModels
 
         public bool IsPaymentComplete => AmountPaid >= TotalAmount;
 
+        public bool CanCompletePayment => IsPaymentComplete || (SelectedCustomer != null && !_ledgerService.IsDefaultCustomer(SelectedCustomer));
+
         public bool IsChangePositive => Change > ChangeTolerance;
         public bool IsChangeNegative => Change < -ChangeTolerance;
         public bool IsChangeExact => !IsChangePositive && !IsChangeNegative;
@@ -223,7 +229,7 @@ namespace POS.ViewModels
             {
                 if (IsChangeNegative)
                 {
-                    return $"مطلوب دفع {Math.Abs(Change):F2} جنيه";
+                    return $"عليك {Math.Abs(Change):F2} جنيه";
                 }
 
                 return $"{Change:F2} جنيه";
@@ -313,13 +319,14 @@ namespace POS.ViewModels
         public ICommand PrintInvoiceCommand { get; }
         public POSViewModel() : base()
         {
+            _ledgerService = App.ServiceProvider.GetRequiredService<ICustomerLedgerService>();
             BillNumber = GetNextInvoiceNumber(false);
             CartItemsList = new ObservableCollection<SaleProduct>();
             CartItemsList.CollectionChanged += CartItemsList_CollectionChanged;
             CashierName = "الكاشير";
             InvoiceDate = DateTime.Now;
             CashBills = BuildCashBills();
-            BillBreakdown = "لا توجد فئات مختارة";
+            BillBreakdown = "لا توجد فئات مدفوعة";
             AddCommand = new RelayCommand(ExecuteAddCommand);
             AcceptCommand = new RelayCommand(ExecuteAcceptCommand);
             CancelCommand = new RelayCommand(ExecuteCancelCommand);
@@ -353,6 +360,11 @@ namespace POS.ViewModels
             {
                 RecalculateTotalAmount();
             }
+
+            if (e.PropertyName == nameof(SelectedCustomer))
+            {
+                OnPropertyChanged(nameof(CanCompletePayment));
+            }
         }
 
         private ObservableCollection<CashBillItem> BuildCashBills()
@@ -374,6 +386,7 @@ namespace POS.ViewModels
         {
             OnPropertyChanged(nameof(Change));
             OnPropertyChanged(nameof(IsPaymentComplete));
+            OnPropertyChanged(nameof(CanCompletePayment));
             OnPropertyChanged(nameof(IsChangePositive));
             OnPropertyChanged(nameof(IsChangeNegative));
             OnPropertyChanged(nameof(IsChangeExact));
@@ -404,7 +417,7 @@ namespace POS.ViewModels
         {
             if (SelectedBills.Count == 0 && ManualAmount <= 0)
             {
-                return "لا توجد فئات مختارة";
+                return "لا توجد فئات مدفوعة";
             }
 
             var sb = new StringBuilder();
@@ -416,11 +429,11 @@ namespace POS.ViewModels
 
             if (ManualAmount > 0)
             {
-                sb.AppendLine($"مبلغ يدوي: {ManualAmount:0.##} جنيه");
+                sb.AppendLine($"المبلغ اليدوي: {ManualAmount:0.##} جنيه");
             }
 
             sb.AppendLine("------------");
-            sb.AppendLine($"الإجمالي: {AmountPaid:0.##} جنيه");
+            sb.AppendLine($"الإجمالي المدفوع: {AmountPaid:0.##} جنيه");
             return sb.ToString().TrimEnd();
         }
         private void ExecuteAddCommand(object parameter)
@@ -461,13 +474,11 @@ namespace POS.ViewModels
         {
             if (CartItemsList.Count == 0)
             {
-                MessageBox.Show("لا توجد أصناف في الفاتورة", "تنبيه");
+                MessageBox.Show("لا توجد عناصر في السلة.", "تنبيه");
                 return;
-            }
-
-            if (!IsPaymentComplete)
+            }            if (!CanCompletePayment)
             {
-                MessageBox.Show("المبلغ المدفوع أقل من المطلوب", "خطأ");
+                MessageBox.Show("لا يمكن إتمام البيع مع وجود باقي بدون اختيار عميل.", "تنبيه");
                 return;
             }
 
@@ -506,7 +517,7 @@ namespace POS.ViewModels
         {
             if (CartItemsList == null || CartItemsList.Count == 0)
             {
-                MessageBox.Show("لا توجد أصناف في الفاتورة للطباعة", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("لا توجد عناصر في السلة للطباعة.", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -587,7 +598,7 @@ namespace POS.ViewModels
             Paragraph summary = new Paragraph();
             summary.FontSize = 11;
             summary.Inlines.Add(new Run($"عدد الأصناف: {CartItemsCount}\n"));
-            summary.Inlines.Add(new Run($"إجمالي الكمية: {TotalQuantity:0.##}\n"));
+            summary.Inlines.Add(new Run($"الكمية الإجمالية: {TotalQuantity:0.##}\n"));
 
             if (Tax > 0)
             {
@@ -621,17 +632,17 @@ namespace POS.ViewModels
             }
             else
             {
-                paymentInfo.Inlines.Add(new Run($"المتبقي عليه: {Math.Abs(Change):F2} جنيه"));
+                paymentInfo.Inlines.Add(new Run($"المتبقي عليك: {Math.Abs(Change):F2} جنيه"));
             }
             doc.Blocks.Add(paymentInfo);
 
             // Bill Breakdown (if bills were selected)
-            if (!string.IsNullOrEmpty(BillBreakdown) && BillBreakdown != "لا توجد فئات مختارة")
+            if (!string.IsNullOrEmpty(BillBreakdown) && BillBreakdown != "لا توجد فئات مدفوعة")
             {
                 doc.Blocks.Add(CreateSeparator());
                 Paragraph billBreakdownPara = new Paragraph();
                 billBreakdownPara.FontSize = 9;
-                billBreakdownPara.Inlines.Add(new Run("تفاصيل الدفع:\n"));
+                billBreakdownPara.Inlines.Add(new Run("الفئات المدفوعة:\n"));
                 billBreakdownPara.Inlines.Add(new Run(BillBreakdown));
                 doc.Blocks.Add(billBreakdownPara);
             }
@@ -661,7 +672,7 @@ namespace POS.ViewModels
         {
             Paragraph separator = new Paragraph();
             separator.FontSize = 10;
-            separator.Inlines.Add(new Run("─────────────────────────────"));
+            separator.Inlines.Add(new Run("-----------------------------"));
             separator.Margin = new Thickness(0, 5, 0, 5);
             return separator;
         }
@@ -676,7 +687,7 @@ namespace POS.ViewModels
             ManualAmount = 0;
             AmountPaid = 0;
             SelectedBills.Clear();
-            BillBreakdown = "لا توجد فئات مختارة";
+            BillBreakdown = "لا توجد فئات مدفوعة";
             RefreshPaymentState();
         }
 
@@ -695,7 +706,7 @@ namespace POS.ViewModels
                         double availableQuantity = (double)(SelectedProduct.MinStock - existingCartItem.Quantity);
                         if (availableQuantity > 0 && Quantity < availableQuantity)
                         {
-                            MessageBoxResult result = MessageBox.Show($"الكمية المدخلة أقل من الحد الأدنى للمخزون. هل ترغب في المتابعة؟", "تحذير", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                            MessageBoxResult result = MessageBox.Show($"الكمية المطلوبة أقل من الحد الأدنى للمخزون. هل تريد المتابعة؟", "تنبيه", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                             if (result == MessageBoxResult.Yes)
                             {
                                 existingCartItem.Quantity += Quantity;
@@ -703,7 +714,7 @@ namespace POS.ViewModels
                             else
                             {
 
-                                MessageBox.Show("تم إلغاء.");
+                                MessageBox.Show("تم الإلغاء.");
                                 return; // Exit the method
                             }
 
@@ -716,7 +727,7 @@ namespace POS.ViewModels
                     else
                     {
                         // The sum exceeds the maximum quantity, set the quantity to the maximum
-                        MessageBox.Show("الكمية المدخلة تتجاوز الكمية المتاحة. تم تعيين الكمية إلى الحد الأقصى.");
+                        MessageBox.Show("الكمية المطلوبة تتجاوز الكمية المتاحة. تم تعيين الكمية إلى الحد الأقصى.");
                         existingCartItem.Quantity = SelectedProduct.Quantity(SelectedWarehouse.Id);
                     }
                     //existingCartItem.Earned = (double)((existingCartItem.SalePrice * existingCartItem.Quantity) - (existingCartItem.Product.GetLastPurchasePrice() * existingCartItem.Quantity));
@@ -801,6 +812,12 @@ namespace POS.ViewModels
 
         private void AddInvoiceWithSaleProducts()
         {
+            var totalAmount = (decimal)TotalAmount;
+            var paidAmount = (decimal)Math.Min(AmountPaid, TotalAmount);
+            var invoicePaymentMethod = totalAmount - paidAmount > 0 ? "آجل" : "نقدي";
+            var paymentEntryMethod = paidAmount > 0 ? "نقدي" : null;
+            var customerId = SelectedCustomer?.Id;
+
             Invoice newInvoice = new Invoice
             {
                 Number = BillNumber,
@@ -808,14 +825,15 @@ namespace POS.ViewModels
                 DueDate = PaymentDate,
                 Tax = (decimal?)Tax,
                 Discount = (decimal?)Discount,
-                TotalPrice = (decimal)TotalAmount,
+                TotalPrice = totalAmount,
                 Subtotal = (decimal)SubTotal,
                 CashierName = CashierName,
-                AmountPaid = (decimal)AmountPaid,
+                AmountPaid = paidAmount,
                 ChangeAmount = (decimal)Change,
-                PaymentMethod = "نقدي",
+                PaymentMethod = invoicePaymentMethod,
                 BillBreakdown = BillBreakdown,
-                Status = "مكتمل"
+                Status = invoicePaymentMethod == "آجل" ? "غير مكتملة" : "مكتملة",
+                CustomerId = customerId
             };
 
             // Add the new invoice to the database
@@ -839,17 +857,24 @@ namespace POS.ViewModels
                 _dbContext.SaveChanges();
             }
 
-            _dbContext.InvoicePayments.Add(new InvoicePayment
+            if (paidAmount > 0)
             {
-                InvoiceId = newInvoice.Id,
-                Amount = (decimal)AmountPaid,
-                Date = DateTime.Now,
-                PaymentType = PaymentType.Cash
-            });
-            _dbContext.SaveChanges();
+                var cashId = _ledgerService.RecordCashMovement(paidAmount, "POS", TransactionType.Income);
+                _dbContext.InvoicePayments.Add(new InvoicePayment
+                {
+                    InvoiceId = newInvoice.Id,
+                    Amount = paidAmount,
+                    Date = DateTime.Now,
+                    PaymentType = PaymentType.Cash,
+                    CashId = cashId
+                });
+                _dbContext.SaveChanges();
+            }
 
-            // Save changes to persist the SaleProduct entities associated with the Invoice
-            //_dbContext.SaveChanges();
+            if (customerId.HasValue)
+            {
+                _ledgerService.RecordInvoiceEntries(customerId.Value, newInvoice.Number, newInvoice.Date, totalAmount, paidAmount, invoicePaymentMethod, paymentEntryMethod);
+            }
 
             // Clear the cart items list
             CartItemsList.Clear();
@@ -905,3 +930,15 @@ namespace POS.ViewModels
 
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

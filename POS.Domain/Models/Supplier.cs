@@ -1,6 +1,6 @@
 ﻿namespace POS.Domain.Models
 {
-    public class Supplier : BaseEntity
+    public class Supplier : BaseEntity, IPerson
     {
         private int _id;
         public int Id

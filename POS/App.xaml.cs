@@ -17,6 +17,12 @@ namespace POS
     {
 
         public static IServiceProvider ServiceProvider { get; private set; }
+        public static event Action CustomersChanged;
+
+        public static void NotifyCustomersChanged()
+        {
+            CustomersChanged?.Invoke();
+        }
 
         //protected override void OnStartup(StartupEventArgs e)
         //{

@@ -419,6 +419,9 @@ namespace POS.Views
                 case "companySettings":
                     newControl = new CompanyInfo_UserControl();
                     break;
+                case "customerLedger":
+                    newControl = new CustomerLedger_UserControl();
+                    break;
                 default:
                     break;
             }

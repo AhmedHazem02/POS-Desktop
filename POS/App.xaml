@@ -84,6 +84,9 @@
                     <SolidColorBrush x:Key="SecundaryBlackColor" Color="#424242"/>
                     <SolidColorBrush x:Key="TertiaryBlackColor" Color="#616161"/>
                 </ResourceDictionary>
+                
+                <ResourceDictionary Source="/Assets/Styles.xaml"/>
+
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

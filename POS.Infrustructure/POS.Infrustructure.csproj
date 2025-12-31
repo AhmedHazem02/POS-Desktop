@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\POS.Application\POS.Application.csproj" />
+    <ProjectReference Include="..\POS.Persistence\POS.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

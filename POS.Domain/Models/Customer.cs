@@ -1,6 +1,6 @@
 ﻿namespace POS.Domain.Models
 {
-    public class Customer : BaseEntity
+    public class Customer : BaseEntity, IPerson
     {
         private int _id;
         public int Id
@@ -124,6 +124,34 @@
                 {
                     _previousBalance = value;
                     NotifyPropertyChanged(nameof(PreviousBalance));
+                }
+            }
+        }
+
+        private bool _isArchived;
+        public bool IsArchived
+        {
+            get => _isArchived;
+            set
+            {
+                if (_isArchived != value)
+                {
+                    _isArchived = value;
+                    NotifyPropertyChanged(nameof(IsArchived));
+                }
+            }
+        }
+
+        private bool _isDefault;
+        public bool IsDefault
+        {
+            get => _isDefault;
+            set
+            {
+                if (_isDefault != value)
+                {
+                    _isDefault = value;
+                    NotifyPropertyChanged(nameof(IsDefault));
                 }
             }
         }
