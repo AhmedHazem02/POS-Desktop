@@ -1,0 +1,195 @@
+<UserControl x:Class="POS.Views.Dashboard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="900" d:DesignWidth="1400"
+             FlowDirection="RightToLeft"
+             Background="#F5F7FA">
+    <UserControl.Resources>
+        <!-- Animation for elements sliding up and fading in -->
+        <Storyboard x:Key="FadeInAndUp">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.5" />
+            <ThicknessAnimation Storyboard.TargetProperty="Margin" From="0,20,0,0" To="0" Duration="0:0:0.5">
+                <ThicknessAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut"/>
+                </ThicknessAnimation.EasingFunction>
+            </ThicknessAnimation>
+        </Storyboard>
+        
+        <Style TargetType="lvc:Axis">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#AEB3B7" />
+        </Style>
+        <Style x:Key="SummaryCardStyle" TargetType="materialDesign:Card">
+            <Setter Property="Padding" Value="25" />
+            <Setter Property="Margin" Value="10" />
+            <Setter Property="UniformCornerRadius" Value="15" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect ShadowDepth="0" Color="#DCE4F1" Opacity="0.5" BlurRadius="15"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Main Content Area -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="30, 30, 10, 30">
+                <!-- Header -->
+                <Grid Margin="10,0,10,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="أهلاً بعودتك!" FontSize="32" FontWeight="Bold" Foreground="#1A202C"/>
+                        <TextBlock x:Name="CurrentDateTextBlock" Text="نجعل إدارة أعمالك أسهل من أي وقت مضى" FontSize="16" Foreground="#718096" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    
+                    <ComboBox Grid.Column="1" HorizontalAlignment="Left" Width="180" materialDesign:HintAssist.Hint="آخر 15 يوماً" Style="{StaticResource MaterialDesignOutlinedComboBox}" VerticalAlignment="Center">
+                        <ComboBoxItem Content="آخر 15 يوماً" />
+                        <ComboBoxItem Content="آخر 30 يوماً" />
+                        <ComboBoxItem Content="آخر 3 أشهر" />
+                        <ComboBoxItem Content="آخر 6 أشهر" />
+                    </ComboBox>
+                </Grid>
+
+                <!-- Summary Cards -->
+                <ItemsControl x:Name="SummaryCards" ItemsSource="{Binding SummaryCards}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="4" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <materialDesign:Card Style="{StaticResource SummaryCardStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="#718096" />
+                                        <TextBlock Text="{Binding Value}" FontSize="28" FontWeight="Bold" Foreground="#1A202C" Margin="0,5,0,0"/>
+                                    </StackPanel>
+
+                                    <materialDesign:PackIcon Grid.Column="1" Kind="{Binding Icon}" Width="40" Height="40" 
+                                                             Foreground="{Binding Color}" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                                </Grid>
+                            </materialDesign:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Charts -->
+                <Grid Margin="0,20,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+
+                    <materialDesign:Card x:Name="SalesChartCard" Grid.Column="0" Style="{StaticResource SummaryCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="ملخص المبيعات" FontSize="18" FontWeight="SemiBold" Foreground="#1A202C" Margin="0,0,0,15"/>
+                            <lvc:CartesianChart Series="{Binding SalesSeriesCollection}" Height="300" LegendLocation="None">
+                                <lvc:CartesianChart.Resources>
+                                    <Style TargetType="lvc:LineSeries">
+                                        <Setter Property="Stroke" Value="#4299E1" />
+                                        <Setter Property="Fill">
+                                            <Setter.Value>
+                                                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                                                    <GradientStop Color="#4299E1" Offset="0"/>
+                                                    <GradientStop Color="#BEE3F8" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </lvc:CartesianChart.Resources>
+                                <lvc:CartesianChart.ChartLegend>
+                                    <lvc:DefaultLegend BulletSize="20"></lvc:DefaultLegend>
+                                </lvc:CartesianChart.ChartLegend>
+                                <lvc:CartesianChart.AxisX>
+                                    <lvc:Axis Title="الأيام" Labels="{Binding ArabicLabels}" />
+                                </lvc:CartesianChart.AxisX>
+                                <lvc:CartesianChart.AxisY>
+                                    <lvc:Axis Title="قيمة المبيعات" LabelFormatter="{Binding Formatter}" />
+                                </lvc:CartesianChart.AxisY>
+                            </lvc:CartesianChart>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card x:Name="InventoryChartCard" Grid.Column="1" Style="{StaticResource SummaryCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="أعلى المنتجات مخزوناً" FontSize="18" FontWeight="SemiBold" Foreground="#1A202C" Margin="0,0,0,15"/>
+                            <lvc:PieChart Series="{Binding ProductInventorySeriesCollection}" Height="300" LegendLocation="Bottom">
+                                <lvc:PieChart.ChartLegend>
+                                    <lvc:DefaultLegend Orientation="Horizontal" />
+                                </lvc:PieChart.ChartLegend>
+                                <lvc:PieChart.DataTooltip>
+                                    <lvc:DefaultTooltip BulletSize="15" />
+                                </lvc:PieChart.DataTooltip>
+                            </lvc:PieChart>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Right Sidebar -->
+        <Border Grid.Column="1" Background="White" Padding="20" Margin="10, 30, 30, 30" CornerRadius="15">
+            <StackPanel>
+                <materialDesign:Card UniformCornerRadius="15" Margin="0,0,0,20" Background="#EDF2F7">
+                     <Image Source="/Assets/pic/arp-tran-removebg-preview.png" Stretch="Uniform" Height="120" Margin="20"/>
+                </materialDesign:Card>
+                
+                <Calendar Language="ar-EG" Margin="0,0,0,20" />
+
+                <materialDesign:Card Padding="20" UniformCornerRadius="15">
+                    <StackPanel>
+                        <TextBlock Text="مهام سريعة" FontSize="18" FontWeight="SemiBold" Foreground="#1A202C" Margin="0,0,0,15"/>
+                        <Button Style="{StaticResource MaterialDesignRaisedLightButton}" Margin="0,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="فاتورة بيع جديدة" />
+                            </StackPanel>
+                        </Button>
+                         <Button Style="{StaticResource MaterialDesignRaisedLightButton}" Margin="0,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="فاتورة شراء جديدة" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ChartBar" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Text="عرض التقارير" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </materialDesign:Card>
+
+            </StackPanel>
+        </Border>
+
+    </Grid>
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource FadeInAndUp}" />
+        </EventTrigger>
+    </UserControl.Triggers>
+</UserControl>
