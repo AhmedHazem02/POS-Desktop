@@ -346,7 +346,7 @@ HorizontalAlignment="Left" />
                                 <!--<Grid Grid.Column="1" Background="#F6F5F8" Name="RenderPages">
                                     --><!-- Content for the second column goes here --><!--
                                 </Grid>-->
-                                <DockPanel Grid.Column="1" Background="#F6F5F8" Name="RenderPages">
+                                <Grid Grid.Column="1" Background="#F6F5F8" Name="RenderPages">
                                     <!-- Top Menu -->
                                     <TabControl x:Name="tabControlRenderPages" SelectionChanged="tabControl_SelectionChanged">
                                         <TabControl.Resources>
@@ -398,7 +398,7 @@ HorizontalAlignment="Left" />
 
 
                                     <!-- Content for the second column goes here -->
-                                </DockPanel>
+                                </Grid>
 
                                 <ProgressBar Grid.Column="1"
 x:Name="loadingProgressBar"

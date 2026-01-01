@@ -280,34 +280,34 @@ namespace POS.Views
         private void Toogle()
         {
             //// Toggle the visibility of the sideMenu control
-            //if (!isMenuOpen)
-            //{
-            //    // Change the icon to indicate menu is open
-            //    menuToggleButton.Content = new PackIcon { Kind = PackIconKind.ReorderHorizontal, Foreground = Brushes.Gray, Width = 30, Height = 30 };
-            //    isMenuOpen = true;
+            if (!isMenuOpen)
+            {
+                // Change the icon to indicate menu is open
+                menuToggleButton.Content = new PackIcon { Kind = PackIconKind.ReorderHorizontal, Foreground = Brushes.Gray, Width = 30, Height = 30 };
+                isMenuOpen = true;
 
-            //    sideMenu.Visibility = Visibility.Visible;
-            //    // Check if there are at least two columns defined in the RenderPages grid
-            //    if (RenderPages.ColumnDefinitions.Count >= 2)
-            //    {
-            //        // Expand the second column to fill the remaining space
-            //        RenderPages.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
-            //    }
-            //}
-            //else
-            //{
-            //    // Change the icon to indicate menu is closed
-            //    menuToggleButton.Content = new PackIcon { Kind = PackIconKind.ArrowCollapseLeft, Foreground = Brushes.Gray, Width = 30, Height = 30 };
-            //    isMenuOpen = false;
+                sideMenu.Visibility = Visibility.Visible;
+                // Check if there are at least two columns defined in the RenderPages grid
+                if (RenderPages.ColumnDefinitions.Count >= 2)
+                {
+                    // Expand the second column to fill the remaining space
+                    RenderPages.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+                }
+            }
+            else
+            {
+                // Change the icon to indicate menu is closed
+                menuToggleButton.Content = new PackIcon { Kind = PackIconKind.ArrowCollapseLeft, Foreground = Brushes.Gray, Width = 30, Height = 30 };
+                isMenuOpen = false;
 
-            //    sideMenu.Visibility = Visibility.Collapsed;
-            //    // Check if there are at least two columns defined in the RenderPages grid
-            //    if (RenderPages.ColumnDefinitions.Count >= 2)
-            //    {
-            //        // Collapse the second column
-            //        RenderPages.ColumnDefinitions[1].Width = new GridLength(0);
-            //    }
-            //}
+                sideMenu.Visibility = Visibility.Collapsed;
+                // Check if there are at least two columns defined in the RenderPages grid
+                if (RenderPages.ColumnDefinitions.Count >= 2)
+                {
+                    // Collapse the second column
+                    RenderPages.ColumnDefinitions[1].Width = new GridLength(0);
+                }
+            }
         }
         private void NotificationButton_Click(object sender, RoutedEventArgs e)
         {
@@ -386,6 +386,12 @@ namespace POS.Views
                 case "salesInvoices":
                     newControl = new SalesHistory_UserControl();
                     break;
+                case "customers":
+                    newControl = new Customer_Add_UserControl();
+                    break;
+                case "installments":
+                    newControl = new CustomerLedger_UserControl();
+                    break;
                 case "addPriceOffer":
                     newControl = new PriceQuotation_UserControl();
                     break;
@@ -421,6 +427,9 @@ namespace POS.Views
                     break;
                 case "customerLedger":
                     newControl = new CustomerLedger_UserControl();
+                    break;
+                case "treasuryReport":
+                    newControl = new TreasuryReport_UserControl();
                     break;
                 default:
                     break;
