@@ -1,4 +1,6 @@
-﻿namespace POS.Domain.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace POS.Domain.Models
 {
     public class Customer : BaseEntity, IPerson
     {
@@ -127,7 +129,20 @@
                 }
             }
         }
-
+        private decimal _currentBalance;
+        [NotMapped]
+        public decimal CurrentBalance
+        {
+            get => _currentBalance;
+            set
+            {
+                if (_currentBalance != value)
+                {
+                    _currentBalance = value;
+                    NotifyPropertyChanged(nameof(CurrentBalance));
+                }
+            }
+        }
         private bool _isArchived;
         public bool IsArchived
         {
@@ -158,3 +173,4 @@
 
     }
 }
+

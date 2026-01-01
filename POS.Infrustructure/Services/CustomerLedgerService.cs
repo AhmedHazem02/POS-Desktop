@@ -161,6 +161,44 @@ namespace POS.Infrustructure.Services
             return openingBalance;
         }
 
+        public IDictionary<int, decimal> GetCurrentBalances(IEnumerable<int> customerIds)
+        {
+            if (customerIds == null)
+            {
+                return new Dictionary<int, decimal>();
+            }
+
+            var ids = customerIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new Dictionary<int, decimal>();
+            }
+
+            var previousBalances = _dbContext.Customers
+                .AsNoTracking()
+                .Where(c => ids.Contains(c.Id))
+                .Select(c => new { c.Id, c.PreviousBalance })
+                .ToList();
+
+            var ledgerSums = _dbContext.CustomerLedgerEntries
+                .AsNoTracking()
+                .Where(e => ids.Contains(e.CustomerId))
+                .GroupBy(e => e.CustomerId)
+                .Select(g => new { CustomerId = g.Key, Net = g.Sum(e => e.Credit - e.Debit) })
+                .ToList();
+
+            var ledgerLookup = ledgerSums.ToDictionary(x => x.CustomerId, x => x.Net);
+            var result = new Dictionary<int, decimal>();
+
+            foreach (var customer in previousBalances)
+            {
+                ledgerLookup.TryGetValue(customer.Id, out var net);
+                result[customer.Id] = (decimal)customer.PreviousBalance + net;
+            }
+
+            return result;
+        }
+
         public async Task<IReadOnlyList<CustomerLedgerEntry>> GetStatementEntriesAsync(int customerId, DateTime? fromDate, DateTime? toDate, int skip, int take, CancellationToken cancellationToken = default)
         {
             var query = _dbContext.CustomerLedgerEntries

@@ -225,7 +225,18 @@ namespace POS.ViewModels
                         || (c.Phone != null && c.Phone.Contains(term)));
                 }
 
-                items = query.Cast<T>().ToList();
+                var customers = query.ToList();
+                var ledgerService = App.ServiceProvider.GetRequiredService<ICustomerLedgerService>();
+                var balances = ledgerService.GetCurrentBalances(customers.Select(c => c.Id));
+                foreach (var customer in customers)
+                {
+                    if (balances.TryGetValue(customer.Id, out var balance))
+                    {
+                        customer.CurrentBalance = balance;
+                    }
+                }
+
+                items = customers.Cast<T>().ToList();
             }
             else
             {

@@ -18,6 +18,7 @@ namespace POS.Application.Contracts.Services
         Task<IReadOnlyList<CustomerLedgerEntry>> GetStatementEntriesAsync(int customerId, DateTime? fromDate, DateTime? toDate, int skip, int take, CancellationToken cancellationToken = default);
         decimal GetOpeningBalance(int customerId, DateTime? fromDate);
         Task<decimal> GetOpeningBalanceAsync(int customerId, DateTime? fromDate, CancellationToken cancellationToken = default);
+        IDictionary<int, decimal> GetCurrentBalances(IEnumerable<int> customerIds);
 
         void RecordInvoiceEntries(int customerId, string invoiceNumber, DateTime date, decimal totalAmount, decimal amountPaid, string invoicePaymentMethod, string? paymentEntryMethod = null);
         void RecordCustomerPayment(int customerId, decimal amount, string paymentMethod, string? referenceNumber, DateTime date);

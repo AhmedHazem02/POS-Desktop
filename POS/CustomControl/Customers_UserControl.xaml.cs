@@ -21,7 +21,7 @@ namespace POS.CustomControl
 
         private async void AddCustomer_Click(object sender, RoutedEventArgs e)
         {
-            if (System.Windows.Application.Current?.MainWindow is HomeWindow homeWindow)
+            if (Window.GetWindow(this) is HomeWindow homeWindow)
             {
                 await homeWindow.OpenMenuItemByIdentifierAsync("addCustomer");
             }

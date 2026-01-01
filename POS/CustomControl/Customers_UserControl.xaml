@@ -11,6 +11,10 @@
              FlowDirection="RightToLeft">
     <UserControl.Resources>
         <validations:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <validations:BalanceToBrushConverter x:Key="CustomerBalanceBrushConverter"
+                                             PositiveBrush="#16A34A"
+                                             NegativeBrush="#DC2626"
+                                             NeutralBrush="#F59E0B"/>
 
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="White"/>
@@ -123,7 +127,17 @@
                     <DataGridTextColumn Header="الهاتف" Binding="{Binding Phone}" Width="1.3*"/>
                     <DataGridTextColumn Header="البريد الإلكتروني" Binding="{Binding Email}" Width="2*"/>
                     <DataGridTextColumn Header="المدينة" Binding="{Binding City}" Width="1.2*"/>
-                    <DataGridTextColumn Header="رصيد سابق" Binding="{Binding PreviousBalance, StringFormat={}{0:N2}}" Width="1.1*"/>
+                    <DataGridTextColumn Header="الرصيد الحالي"
+                                        Binding="{Binding CurrentBalance, StringFormat={}{0:N2}}"
+                                        Width="1.1*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"
+                                        Value="{Binding CurrentBalance, Converter={StaticResource CustomerBalanceBrushConverter}}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTemplateColumn Header="افتراضي" Width="0.9*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
