@@ -1,10 +1,13 @@
 using POS.Application.Contracts.Services;
+using Microsoft.EntityFrameworkCore;
 using POS.Domain.Models;
 using POS.Domain.Models.Payments.PaymentMethods;
 using POS.Persistence.Context;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace POS.Infrustructure.Services
 {
@@ -20,13 +23,16 @@ namespace POS.Infrustructure.Services
 
         public Customer EnsureDefaultCustomer()
         {
-            var customer = _dbContext.Customers.FirstOrDefault(c => c.IsDefault && !c.IsArchived);
+            var customer = _dbContext.Customers
+                .AsNoTracking()
+                .FirstOrDefault(c => c.IsDefault && !c.IsArchived);
             if (customer != null)
             {
                 return customer;
             }
 
-            customer = _dbContext.Customers.FirstOrDefault(c => c.Name == DefaultCustomerName && !c.IsArchived);
+            customer = _dbContext.Customers
+                .FirstOrDefault(c => c.Name == DefaultCustomerName && !c.IsArchived);
             if (customer != null)
             {
                 customer.IsDefault = true;
@@ -48,9 +54,42 @@ namespace POS.Infrustructure.Services
             return customer;
         }
 
+        public async Task<Customer> EnsureDefaultCustomerAsync(CancellationToken cancellationToken = default)
+        {
+            var customer = await _dbContext.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.IsDefault && !c.IsArchived, cancellationToken);
+            if (customer != null)
+            {
+                return customer;
+            }
+
+            customer = await _dbContext.Customers
+                .FirstOrDefaultAsync(c => c.Name == DefaultCustomerName && !c.IsArchived, cancellationToken);
+            if (customer != null)
+            {
+                customer.IsDefault = true;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                return customer;
+            }
+
+            customer = new Customer
+            {
+                Name = DefaultCustomerName,
+                CreatedAt = DateTime.Now,
+                PreviousBalance = 0,
+                IsDefault = true,
+                IsArchived = false
+            };
+
+            _dbContext.Customers.Add(customer);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return customer;
+        }
+
         public Customer? GetDefaultCustomer()
         {
-            return _dbContext.Customers.FirstOrDefault(c => c.IsDefault && !c.IsArchived)
+            return _dbContext.Customers.AsNoTracking().FirstOrDefault(c => c.IsDefault && !c.IsArchived)
                 ?? _dbContext.Customers.FirstOrDefault(c => c.Name == DefaultCustomerName && !c.IsArchived);
         }
 
@@ -75,6 +114,7 @@ namespace POS.Infrustructure.Services
         public IReadOnlyList<CustomerLedgerEntry> GetStatementEntries(int customerId, DateTime? fromDate, DateTime? toDate)
         {
             var baseQuery = _dbContext.CustomerLedgerEntries
+                .AsNoTracking()
                 .Where(e => e.CustomerId == customerId);
 
             var openingBalance = GetOpeningBalance(customerId, fromDate);
@@ -99,7 +139,7 @@ namespace POS.Infrustructure.Services
 
             foreach (var entry in entries)
             {
-                runningBalance += entry.Debit - entry.Credit;
+                runningBalance += entry.Credit - entry.Debit;
                 entry.RunningBalance = runningBalance;
             }
 
@@ -113,8 +153,64 @@ namespace POS.Infrustructure.Services
             {
                 var priorNet = _dbContext.CustomerLedgerEntries
                     .Where(e => e.CustomerId == customerId && e.Date < fromDate.Value)
-                    .Select(e => (decimal?)(e.Debit - e.Credit))
+                    .Select(e => (decimal?)(e.Credit - e.Debit))
                     .Sum() ?? 0m;
+                openingBalance += priorNet;
+            }
+
+            return openingBalance;
+        }
+
+        public async Task<IReadOnlyList<CustomerLedgerEntry>> GetStatementEntriesAsync(int customerId, DateTime? fromDate, DateTime? toDate, int skip, int take, CancellationToken cancellationToken = default)
+        {
+            var query = _dbContext.CustomerLedgerEntries
+                .AsNoTracking()
+                .Where(e => e.CustomerId == customerId);
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(e => e.Date >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(e => e.Date <= toDate.Value);
+            }
+
+            return await query
+                .OrderBy(e => e.Date)
+                .ThenBy(e => e.Id)
+                .Skip(skip)
+                .Take(take)
+                .Select(e => new CustomerLedgerEntry
+                {
+                    Id = e.Id,
+                    CustomerId = e.CustomerId,
+                    Date = e.Date,
+                    Debit = e.Debit,
+                    Credit = e.Credit,
+                    Description = e.Description,
+                    ReferenceNumber = e.ReferenceNumber,
+                    PaymentMethod = e.PaymentMethod
+                })
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<decimal> GetOpeningBalanceAsync(int customerId, DateTime? fromDate, CancellationToken cancellationToken = default)
+        {
+            var openingBalance = await _dbContext.Customers
+                .AsNoTracking()
+                .Where(c => c.Id == customerId)
+                .Select(c => (decimal?)c.PreviousBalance)
+                .FirstOrDefaultAsync(cancellationToken) ?? 0m;
+
+            if (fromDate.HasValue)
+            {
+                var priorNet = await _dbContext.CustomerLedgerEntries
+                    .AsNoTracking()
+                    .Where(e => e.CustomerId == customerId && e.Date < fromDate.Value)
+                    .Select(e => (decimal?)(e.Credit - e.Debit))
+                    .SumAsync(cancellationToken) ?? 0m;
                 openingBalance += priorNet;
             }
 
@@ -184,6 +280,27 @@ namespace POS.Infrustructure.Services
             _dbContext.SaveChanges();
         }
 
+        public async Task RecordCustomerPaymentAsync(int customerId, decimal amount, string paymentMethod, string? referenceNumber, DateTime date, CancellationToken cancellationToken = default)
+        {
+            if (amount <= 0 || IsDefaultCustomerId(customerId))
+            {
+                return;
+            }
+
+            _dbContext.CustomerLedgerEntries.Add(new CustomerLedgerEntry
+            {
+                CustomerId = customerId,
+                Date = date,
+                Debit = 0,
+                Credit = amount,
+                Description = "Customer Payment",
+                ReferenceNumber = referenceNumber,
+                PaymentMethod = paymentMethod
+            });
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         public int? RecordCashMovement(decimal amount, string? cashName, TransactionType type)
         {
             if (amount <= 0)
@@ -200,6 +317,25 @@ namespace POS.Infrustructure.Services
 
             _dbContext.Cashes.Add(cash);
             _dbContext.SaveChanges();
+            return cash.Id;
+        }
+
+        public async Task<int?> RecordCashMovementAsync(decimal amount, string? cashName, TransactionType type, CancellationToken cancellationToken = default)
+        {
+            if (amount <= 0)
+            {
+                return null;
+            }
+
+            var cash = new Cash
+            {
+                CashName = string.IsNullOrWhiteSpace(cashName) ? "POS" : cashName,
+                Amount = amount,
+                Type = type
+            };
+
+            _dbContext.Cashes.Add(cash);
+            await _dbContext.SaveChangesAsync(cancellationToken);
             return cash.Id;
         }
 

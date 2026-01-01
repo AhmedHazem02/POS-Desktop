@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using POS.Application.Contracts.Services;
 using POS.Domain.Models;
@@ -138,6 +138,23 @@ namespace POS.ViewModels
                 }
             }
         }
+
+        private string _statusMessage;
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set
+            {
+                if (_statusMessage != value)
+                {
+                    _statusMessage = value;
+                    OnPropertyChanged(nameof(StatusMessage));
+                    OnPropertyChanged(nameof(HasStatusMessage));
+                }
+            }
+        }
+
+        public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
         private ObservableCollection<T> _itemList;
         public ObservableCollection<T> ItemList
         {
@@ -258,6 +275,7 @@ namespace POS.ViewModels
         
         private void Add(object parameter)
         {
+            StatusMessage = string.Empty;
             if (string.IsNullOrWhiteSpace(Name))
             {
                 MessageBox.Show("يرجى توفير اسم.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -283,6 +301,7 @@ namespace POS.ViewModels
             if (typeof(T) == typeof(Customer))
             {
                 LoadItems();
+                StatusMessage = "تم إضافة عميل بنجاح.";
             }
             else
             {
@@ -296,6 +315,7 @@ namespace POS.ViewModels
 
         private void Edit(object parameter)
         {
+            StatusMessage = string.Empty;
             if (SelectedItem != null)
             {
                 if (string.IsNullOrWhiteSpace(Name))
@@ -337,6 +357,7 @@ namespace POS.ViewModels
 
         private void DeleteItem(object parameter)
         {
+            StatusMessage = string.Empty;
             if (SelectedItem == null)
             {
                 return;
@@ -492,3 +513,4 @@ namespace POS.ViewModels
         }
     }
 }
+

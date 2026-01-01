@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using POS.CustomControl;
 using POS.Persistence.Context;
 using POS.ViewModels;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,6 +32,7 @@ namespace POS.Views
         AuthenticationService authenticationService = App.ServiceProvider.GetRequiredService<AuthenticationService>();
         private ObservableCollection<string> messages;
         private DispatcherTimer timer;
+        private bool _isHandlingMenuSelection;
 
         public HomeWindow()
         {
@@ -322,42 +324,55 @@ namespace POS.Views
         {
             if (selectedMenuItem.IsClickable)
             {
-
-
-                UserControl newControl = CreateControlForMenuItem(selectedMenuItem);
-
-                if (newControl != null)
+                if (_isHandlingMenuSelection)
                 {
-                    TabItem existingTab = tabControlRenderPages.Items.OfType<TabItem>().FirstOrDefault(t => t.Tag as string == selectedMenuItem.Identifier);
+                    return;
+                }
+
+                _isHandlingMenuSelection = true;
+                try
+                {
+                    TabItem existingTab = tabControlRenderPages.Items
+                        .OfType<TabItem>()
+                        .FirstOrDefault(t => t.Tag as string == selectedMenuItem.Identifier);
                     if (existingTab != null)
                     {
                         tabControlRenderPages.SelectedItem = existingTab;
+                        return;
                     }
-                    else
+
+                    UserControl newControl = CreateControlForMenuItem(selectedMenuItem);
+                    if (newControl == null)
                     {
-                        loadingProgressBar.Visibility = Visibility.Visible;
-                        RenderPages.IsEnabled = false;
-                        TabItem tabItem = new TabItem
-                        {
-
-                            Name = "page", // Set the Name property
-                            Header = selectedMenuItem.Name,
-                            Content = newControl,
-                            Tag = selectedMenuItem.Identifier
-                        };
-                        // Add the "page" style to the tab item
-                        //tabControlRenderPages.Resources.Add("page", tabItem);
-
-                        tabControlRenderPages.Items.Add(tabItem);
-                        tabControlRenderPages.SelectedItem = tabItem;
-
-                        Toogle();
-
-                        await Task.Delay(2000);
-
-                        loadingProgressBar.Visibility = Visibility.Collapsed;
-                        RenderPages.IsEnabled = true;
+                        return;
                     }
+
+                    loadingProgressBar.Visibility = Visibility.Visible;
+                    RenderPages.IsEnabled = false;
+                    TabItem tabItem = new TabItem
+                    {
+
+                        Name = "page", // Set the Name property
+                        Header = selectedMenuItem.Name,
+                        Content = newControl,
+                        Tag = selectedMenuItem.Identifier
+                    };
+                    // Add the "page" style to the tab item
+                    //tabControlRenderPages.Resources.Add("page", tabItem);
+
+                    tabControlRenderPages.Items.Add(tabItem);
+                    tabControlRenderPages.SelectedItem = tabItem;
+
+                    Toogle();
+
+                    await Task.Delay(2000);
+
+                    loadingProgressBar.Visibility = Visibility.Collapsed;
+                    RenderPages.IsEnabled = true;
+                }
+                finally
+                {
+                    _isHandlingMenuSelection = false;
                 }
 
 
@@ -387,7 +402,7 @@ namespace POS.Views
                     newControl = new SalesHistory_UserControl();
                     break;
                 case "customers":
-                    newControl = new Customer_Add_UserControl();
+                    newControl = new Customers_UserControl();
                     break;
                 case "installments":
                     newControl = new CustomerLedger_UserControl();
@@ -443,6 +458,47 @@ namespace POS.Views
             {
                 await HandleSelectedMenuItem(selectedMenuItem);
             }
+        }
+
+        public async Task OpenMenuItemByIdentifierAsync(string identifier)
+        {
+            if (string.IsNullOrWhiteSpace(identifier))
+            {
+                return;
+            }
+
+            if (menuTreeView.ItemsSource is not IEnumerable<MenuItem> items)
+            {
+                return;
+            }
+
+            var targetItem = FindMenuItemByIdentifier(items, identifier);
+            if (targetItem != null)
+            {
+                await HandleSelectedMenuItem(targetItem);
+            }
+        }
+
+        private MenuItem FindMenuItemByIdentifier(IEnumerable<MenuItem> items, string identifier)
+        {
+            foreach (var item in items)
+            {
+                if (string.Equals(item.Identifier, identifier, StringComparison.OrdinalIgnoreCase))
+                {
+                    return item;
+                }
+
+                if (item.Children != null && item.Children.Count > 0)
+                {
+                    var child = FindMenuItemByIdentifier(item.Children, identifier);
+                    if (child != null)
+                    {
+                        return child;
+                    }
+                }
+            }
+
+            return null;
         }
 
 

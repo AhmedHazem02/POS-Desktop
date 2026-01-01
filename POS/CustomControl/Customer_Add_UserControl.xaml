@@ -4,10 +4,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:POS.CustomControl"
-               xmlns:fa="http://schemas.fontawesome.io/icons/" 
+             xmlns:validations="clr-namespace:POS.Validations"
+             xmlns:fa="http://schemas.fontawesome.io/icons/" 
              mc:Ignorable="d" 
              MinWidth="800"
              MinHeight="800">
+    <UserControl.Resources>
+        <validations:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </UserControl.Resources>
     <Border  FlowDirection="RightToLeft" Grid.Row="1" Margin="10" CornerRadius="15" Background="White" BorderThickness="2" BorderBrush="{StaticResource PrimaryBackgroundColor}">
         <Grid >
             <Grid.RowDefinitions>
@@ -258,6 +262,14 @@ Command="{Binding AddCommand}">
 
 
                 </StackPanel>
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="#15803D"
+                           HorizontalAlignment="Center"
+                           Margin="10,6,10,0"
+                           Visibility="{Binding HasStatusMessage, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
                 <!-- Search -->
                 <StackPanel Margin="10">
