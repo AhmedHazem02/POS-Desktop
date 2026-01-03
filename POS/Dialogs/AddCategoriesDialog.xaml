@@ -119,7 +119,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
-                <Border Grid.Row="0" Background="#007ACC">
+                <Border Grid.Row="0" Background="{StaticResource Accent600Brush}">
                  
                 </Border>
 
@@ -140,7 +140,7 @@
                     <StackPanel Margin="10">
                         <TextBlock Text="الصورة" FontSize="16" FontWeight="Bold"/>
                         <StackPanel Orientation="Horizontal" Margin="0 5">
-                            <Button Content="تحديد صورة" Width="150" FontSize="16" FontWeight="Bold" Foreground="White" Background="#007ACC" Style="{StaticResource CustomButtonStyle}" Command="{Binding SelectImageCommand}"/>
+                            <Button Content="تحديث صورة" Width="150" FontSize="16" FontWeight="Bold" Foreground="White" Background="{StaticResource Accent600Brush}" Style="{StaticResource CustomButtonStyle}" Command="{Binding SelectImageCommand}"/>
                             <!-- Bind the Source property of the Image to the ImageSource property in your view model -->
                             <Image Source="{Binding ImageSource}" Width="50" Height="50" />
                         </StackPanel>

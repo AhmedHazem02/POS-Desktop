@@ -18,6 +18,9 @@ namespace POS.Domain.Models
             set { _name = value; NotifyPropertyChanged(nameof(Name)); }
         }
 
+        // Navigation property
+        public virtual ICollection<Invoice>? Invoices { get; set; }
+
         private string? _contactName;
         public string? ContactName
         {
@@ -170,6 +173,40 @@ namespace POS.Domain.Models
                 }
             }
         }
+
+        private int _loyaltyPoints;
+        [NotMapped]
+        public int LoyaltyPoints
+        {
+            get => _loyaltyPoints;
+            set
+            {
+                if (_loyaltyPoints != value)
+                {
+                    _loyaltyPoints = value;
+                    NotifyPropertyChanged(nameof(LoyaltyPoints));
+                    NotifyPropertyChanged(nameof(LoyaltyTier));
+                }
+            }
+        }
+
+        [NotMapped]
+        public string LoyaltyTier
+        {
+            get
+            {
+                if (LoyaltyPoints >= 500) return "ذهبي";
+                if (LoyaltyPoints >= 200) return "فضي";
+                if (LoyaltyPoints >= 50) return "برونزي";
+                return "جديد";
+            }
+        }
+
+        [NotMapped]
+        public string ImagePath => string.IsNullOrEmpty(Image) ? "/Assets/pic/default-avatar.png" : Image;
+
+        [NotMapped]
+        public decimal TotalDebt => Math.Abs(Math.Min(CurrentBalance, 0));
 
     }
 }

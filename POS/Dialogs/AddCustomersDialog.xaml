@@ -1,430 +1,505 @@
-﻿<Window x:Class="POS.Dialogs.AddCustomersDialog"
-              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window x:Class="POS.Dialogs.AddCustomersDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:fa="http://schemas.fontawesome.io/icons/" 
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:controls="clr-namespace:POS.Components"
         xmlns:converters="clr-namespace:POS.Validations"
-        xmlns:Icon="http://schemas.fontawesome.io/icons/" 
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        Height="1000" Width="1000" WindowState="Normal" WindowStyle="None" Background="White"
-        AllowsTransparency="True">
+        Height="900" Width="1100" 
+        WindowStyle="None" 
+        Background="Transparent"
+        AllowsTransparency="True"
+        ResizeMode="NoResize">
+    
     <Window.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <Style x:Key="IconButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColor}"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-
-        <!-- ModernTextBoxStyle -->
-        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="#F7F7F7"/>
-            <Setter Property="BorderBrush" Value="#DDDDDD"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="Padding" Value="8"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="ToolTip" Value="{Binding ErrorMessage}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
-              BorderBrush="{TemplateBinding BorderBrush}"
-              BorderThickness="{TemplateBinding BorderThickness}">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                        VerticalAlignment="Center"
-                        Padding="{TemplateBinding Padding}"
-                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
-                        Focusable="false"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="CustomButtonStyle" TargetType="Button">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="PART_Border"
-                         Cursor="Hand"
-                 Background="{TemplateBinding Background}"
-                 BorderBrush="{TemplateBinding BorderBrush}"
-                 BorderThickness="{TemplateBinding BorderThickness}"
-                         
-                 CornerRadius="{StaticResource AppCornerRadius}" Width="{Binding Width, FallbackValue=auto}" Padding="5, 0" MinWidth="{Binding MinWidth, FallbackValue=100}" Height="35" Margin="5, 0">
-                            <ContentPresenter x:Name="PART_ContentPresenter"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                                       TextElement.FontSize="14"
-                                       TextElement.FontFamily="{StaticResource Montserrat_Semibold}"
-                                       TextElement.FontStretch="Expanded"
-                               TextElement.Foreground="{TemplateBinding Foreground}" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="PART_Border" Property="Background" Value="#004FC4" />
-                                <Setter TargetName="PART_ContentPresenter" Property="TextElement.Foreground" Value="White" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="PART_Border" Property="Background" Value="DarkGray" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="PART_Border" Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="CustomLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0 10 0 10"/>
-            <Setter Property="FlowDirection" Value="RightToLeft"/>
-        </Style>
-        <Style x:Key="CustomInputStyle" TargetType="TextBox">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Margin" Value="0 0 0 10"/>
-            <Setter Property="Width" Value="150"/>
-            <Setter Property="FlowDirection" Value="LeftToRight"/>
-        </Style>
-        <Style x:Key="CustomDropdownStyle" TargetType="ComboBox">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Margin" Value="0 0 0 10"/>
-            <Setter Property="Width" Value="150"/>
-            <Setter Property="FlowDirection" Value="LeftToRight"/>
-        </Style>
-    </Window.Resources>
-    <Grid  FlowDirection="RightToLeft">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="30" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <controls:WindowHeader Grid.Row="0" HeaderTitle="اضافة عميل" />
-        <Border Grid.Row="1" Margin="10" CornerRadius="15" Background="White" BorderThickness="2" BorderBrush="{StaticResource PrimaryBackgroundColor}">
-            <Grid Background="#F0F0F0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"></RowDefinition>
-                    <RowDefinition Height="*"></RowDefinition>
-                    <RowDefinition Height="Auto"></RowDefinition>
-                </Grid.RowDefinitions>
-
-                <!-- Header -->
-                <Border Grid.Row="0" Background="#007ACC">
-
-                </Border>
-
-                <!-- Content -->
-                <StackPanel Grid.Row="1" Margin="20">
-                    <!-- Add New Category -->
-                    <!-- First Row -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Add New Customer -->
-                        <StackPanel Grid.Column="0" Margin="10">
-                            <StackPanel Margin="10">
-                                <TextBlock Text="الاسم" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Name}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Contact Name -->
-                        <StackPanel Grid.Column="1" Margin="10">
-                            <!-- Image Selector -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="الصورة" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <Button Content="تحديد صورة" Width="150" FontSize="16" FontWeight="Bold" Foreground="White" Background="#007ACC" Style="{StaticResource CustomButtonStyle}" Command="{Binding SelectImageCommand}"/>
-                                    <!-- Bind the Source property of the Image to the ImageSource property in your view model -->
-                                    <Image Source="{Binding ImageSource}" Width="50" Height="50" />
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- Second Row -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Email -->
-                        <StackPanel Grid.Column="0" Margin="10">
-                            <!-- Email -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="البريد الإلكتروني" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Email}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Phone -->
-                        <StackPanel Grid.Column="1" Margin="10">
-
-                            <!-- Phone -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="الهاتف" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Phone}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Email -->
-                        <StackPanel Grid.Column="0" Margin="10">
-                            <!-- Address -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="العنوان" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Address}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Phone -->
-                        <StackPanel Grid.Column="1" Margin="10">
-
-                            <!-- City -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="المدينة" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-          Style="{StaticResource ModernTextBoxStyle}" Text="{Binding City}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-
-                        </StackPanel>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Email -->
-                        <StackPanel Grid.Column="0" Margin="10">
-
-                            <!-- Country -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="البلد" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Country}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-
-                        <!-- Phone -->
-                        <StackPanel Grid.Column="1" Margin="10">
-
-                            <!-- Postal Code -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="الرمز البريدي" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding PostalCode}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-
-                        </StackPanel>
-                    </Grid>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Email -->
-                        <StackPanel Grid.Column="0" Margin="10">
-
-                            <!-- Website -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="الموقع الإلكتروني" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Website}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-
-                        <!-- Phone -->
-                        <StackPanel Grid.Column="1" Margin="10">
-
-                            <!-- Notes -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="ملاحظات" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Notes}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </Grid>
-
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Email -->
-                        <StackPanel Grid.Column="0" Margin="10">
-
-                            <!-- Commercial Register -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="السجل التجاري" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding CommercialRegister}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-
-                        <!-- Phone -->
-                        <StackPanel Grid.Column="1" Margin="10">
-
-
-
-                            <!-- Tax Card -->
-                            <StackPanel Margin="10">
-                                <TextBlock Text="البطاقة الضريبية" FontSize="16" FontWeight="Bold"/>
-                                <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <TextBox Width="600" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding TaxCard}"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </Grid>
-
-
-
-
-
-
-
-
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Assets/UltraModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
             
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            
+            <!-- Modern TextBox Style with Validation -->
+            <Style x:Key="ModernTextBox" TargetType="TextBox">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="Height" Value="45"/>
+                <Setter Property="Padding" Value="12,10"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="BorderBrush" Value="{StaticResource Neutral300Brush}"/>
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="Foreground" Value="{StaticResource Gray900Brush}"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FlowDirection" Value="RightToLeft"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                            Focusable="false"
+                                            HorizontalScrollBarVisibility="Hidden"
+                                            VerticalScrollBarVisibility="Hidden"
+                                            Padding="{TemplateBinding Padding}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Accent600Brush}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Accent500Brush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
+            <!-- Label Style -->
+            <Style x:Key="ModernLabel" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{StaticResource Gray800Brush}"/>
+                <Setter Property="Margin" Value="0,0,0,6"/>
+                <Setter Property="FlowDirection" Value="RightToLeft"/>
+            </Style>
 
+            <!-- Required Indicator -->
+            <Style x:Key="RequiredIndicator" TargetType="TextBlock">
+                <Setter Property="Text" Value="*"/>
+                <Setter Property="Foreground" Value="{StaticResource Danger600Brush}"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Margin" Value="4,0,0,0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
 
-                    <!-- DataGrid -->
-                    <DataGrid Margin="10"
-          HorizontalAlignment="Stretch"
-          VerticalAlignment="Stretch"
-          IsReadOnly="True"
-          CanUserAddRows="False"
-          ScrollViewer.CanContentScroll="True"
-          CanUserResizeColumns="False"
-          CanUserResizeRows="False"
-          CanUserReorderColumns="False"
-          SelectionMode="Single"
-          AutoGenerateColumns="False"
-          ItemsSource="{Binding ItemList}"
-          SelectedItem="{Binding SelectedItem}">
-                        <DataGrid.Columns>
-                            <!-- Display the category name -->
-                            <DataGridTextColumn Header="اسم" Binding="{Binding Name}" Width="4*"/>
+    <Border Background="{StaticResource BackgroundGradientBrush}" CornerRadius="16">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" Opacity="0.3" BlurRadius="30" ShadowDepth="0"/>
+        </Border.Effect>
+        
+        <Grid FlowDirection="RightToLeft">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-                            <!-- Edit button column -->
-                            <DataGridTemplateColumn Header="تعديل" Width="1*">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button  Command="{Binding DataContext.EditItemCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                             CommandParameter="{Binding}" Style="{StaticResource IconButton}">
-                                            <fa:FontAwesome Icon="Edit" />
-                                        </Button>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <!-- Delete button column -->
-                            <DataGridTemplateColumn Header="حذف" Width="1*">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button  Command="{Binding DataContext.DeleteItemCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                             CommandParameter="{Binding}" Style="{StaticResource IconButton}">
-                                            <fa:FontAwesome Icon="Trash" />
-                                        </Button>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-
-
-                </StackPanel>
-
-                <!-- Footer -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="اضافة" FontSize="16" Width="150" FontWeight="Bold" Background="Green" Margin="10" 
-        Foreground="White" Style="{StaticResource CustomButtonStyle}" 
-        Command="{Binding AddCommand}">
-
-                    </Button>
-                    <StackPanel Orientation="Horizontal" Margin="0 5">
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding CurrentState}" Value="Modify">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
-
-                        <Button Content="تعديل" FontSize="16" Width="150" FontWeight="Bold" Background="Orange" Margin="10" 
-            Foreground="White" Command="{Binding EditCommand}" />
+            <!-- Header -->
+            <Border Grid.Row="0" 
+                    CornerRadius="16,16,0,0"
+                    Padding="30,20">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#1E40AF" Offset="0"/>
+                        <GradientStop Color="#3B82F6" Offset="0.5"/>
+                        <GradientStop Color="#0EA5E9" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="إضافة / تعديل عميل" 
+                                   FontSize="24" 
+                                   FontWeight="Bold" 
+                                   Foreground="White"/>
+                        <TextBlock Text="أدخل بيانات العميل بشكل كامل ودقيق" 
+                                   FontSize="13" 
+                                   Foreground="#E0E7FF" 
+                                   Margin="0,4,0,0"/>
                     </StackPanel>
-
-
-                    <Button Content="انهاء" FontSize="16" Width="150" FontWeight="Bold" Background="Gray" Margin="10" 
-        Foreground="White" Style="{StaticResource CustomButtonStyle}" 
-        Command="{Binding FinishCommand}">
-
+                    
+                    <Button Grid.Column="1"
+                            Content="✕"
+                            Width="40" Height="40"
+                            FontSize="20"
+                            Background="Transparent"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Click="CloseButton_Click"
+                            VerticalAlignment="Top">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="border"
+                                                    Background="{TemplateBinding Background}"
+                                                    CornerRadius="8"
+                                                    Cursor="{TemplateBinding Cursor}">
+                                                <ContentPresenter HorizontalAlignment="Center" 
+                                                                VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="Background" Value="#33FFFFFF"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
                     </Button>
+                </Grid>
+            </Border>
 
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" 
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="30,20">
+                <StackPanel>
+                    <!-- Basic Info Section -->
+                    <Border Background="White" 
+                            CornerRadius="12" 
+                            Padding="24"
+                            Margin="0,0,0,16">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
+                        </Border.Effect>
+                        
+                        <StackPanel>
+                            <TextBlock Text="المعلومات الأساسية" 
+                                       FontSize="16" 
+                                       FontWeight="Bold" 
+                                       Foreground="{StaticResource Accent700Brush}"
+                                       Margin="0,0,0,20"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="16"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Name (Required) -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ModernLabel}" Text="اسم العميل"/>
+                                        <TextBlock Style="{StaticResource RequiredIndicator}"/>
+                                    </StackPanel>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Phone (Required) -->
+                                <StackPanel Grid.Row="0" Grid.Column="2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ModernLabel}" Text="رقم الهاتف"/>
+                                        <TextBlock Style="{StaticResource RequiredIndicator}"/>
+                                    </StackPanel>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Email -->
+                                <StackPanel Grid.Row="2" Grid.Column="0">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="البريد الإلكتروني"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Image -->
+                                <StackPanel Grid.Row="2" Grid.Column="2">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="صورة العميل"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <Button Grid.Column="0"
+                                                Content="اختر صورة"
+                                                Height="45"
+                                                Background="{StaticResource Neutral100Brush}"
+                                                Foreground="{StaticResource Gray700Brush}"
+                                                BorderBrush="{StaticResource Neutral300Brush}"
+                                                BorderThickness="2"
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Cursor="Hand"
+                                                Command="{Binding SelectImageCommand}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="border"
+                                                            Background="{TemplateBinding Background}"
+                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                                            CornerRadius="8,0,0,8">
+                                                        <ContentPresenter HorizontalAlignment="Center" 
+                                                                        VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="{StaticResource Neutral200Brush}"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        
+                                        <Border Grid.Column="1"
+                                                Width="45" Height="45"
+                                                BorderBrush="{StaticResource Neutral300Brush}"
+                                                BorderThickness="2,2,2,2"
+                                                CornerRadius="0,8,8,0">
+                                            <Image Source="{Binding ImageSource}" 
+                                                   Stretch="UniformToFill"/>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Address Section -->
+                    <Border Background="White" 
+                            CornerRadius="12" 
+                            Padding="24"
+                            Margin="0,0,0,16">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
+                        </Border.Effect>
+                        
+                        <StackPanel>
+                            <TextBlock Text="معلومات العنوان" 
+                                       FontSize="16" 
+                                       FontWeight="Bold" 
+                                       Foreground="{StaticResource Accent700Brush}"
+                                       Margin="0,0,0,20"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="16"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="16"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Address -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="العنوان"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- City -->
+                                <StackPanel Grid.Row="0" Grid.Column="2">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="المدينة"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding City, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Country -->
+                                <StackPanel Grid.Row="2" Grid.Column="0">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="البلد"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding Country, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Postal Code -->
+                                <StackPanel Grid.Row="2" Grid.Column="2">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="الرمز البريدي"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding PostalCode, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Website -->
+                                <StackPanel Grid.Row="4" Grid.Column="0">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="الموقع الإلكتروني"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding Website, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Business Info Section -->
+                    <Border Background="White" 
+                            CornerRadius="12" 
+                            Padding="24"
+                            Margin="0,0,0,16">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
+                        </Border.Effect>
+                        
+                        <StackPanel>
+                            <TextBlock Text="المعلومات التجارية" 
+                                       FontSize="16" 
+                                       FontWeight="Bold" 
+                                       Foreground="{StaticResource Accent700Brush}"
+                                       Margin="0,0,0,20"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="16"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Commercial Register -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="السجل التجاري"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding CommercialRegister, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Tax Card -->
+                                <StackPanel Grid.Row="0" Grid.Column="2">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="البطاقة الضريبية"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Text="{Binding TaxCard, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+
+                                <!-- Notes -->
+                                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
+                                    <TextBlock Style="{StaticResource ModernLabel}" Text="ملاحظات"/>
+                                    <TextBox Style="{StaticResource ModernTextBox}"
+                                             Height="80"
+                                             TextWrapping="Wrap"
+                                             AcceptsReturn="True"
+                                             VerticalContentAlignment="Top"
+                                             Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </Grid>
-        </Border>
+            </ScrollViewer>
 
-    </Grid>
+            <!-- Footer Actions -->
+            <Border Grid.Row="2" 
+                    Background="White"
+                    CornerRadius="0,0,16,16"
+                    BorderBrush="{StaticResource Neutral200Brush}"
+                    BorderThickness="0,1,0,0"
+                    Padding="30,20">
+                
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
+                    <!-- Status Message -->
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding StatusMessage}"
+                               Foreground="{StaticResource Danger600Brush}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"
+                               Visibility="{Binding HasStatusMessage, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Column="2" 
+                                Orientation="Horizontal" 
+                                HorizontalAlignment="Left">
+                        
+                        <!-- Add/Save Button -->
+                        <Button Content="{Binding SaveButtonText}"
+                                Width="140" Height="45"
+                                Margin="0,0,10,0"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Cursor="Hand"
+                                Command="{Binding SaveCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="border"
+                                                        Background="#10B981"
+                                                        CornerRadius="8"
+                                                        Cursor="{TemplateBinding Cursor}">
+                                                    <ContentPresenter HorizontalAlignment="Center" 
+                                                                    VerticalAlignment="Center"
+                                                                    TextElement.Foreground="White"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="#059669"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter TargetName="border" Property="Opacity" Value="0.5"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <!-- Cancel Button -->
+                        <Button Content="إلغاء"
+                                Width="140" Height="45"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Cursor="Hand"
+                                Click="CloseButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="border"
+                                                        Background="{StaticResource Neutral200Brush}"
+                                                        CornerRadius="8"
+                                                        Cursor="{TemplateBinding Cursor}">
+                                                    <ContentPresenter HorizontalAlignment="Center" 
+                                                                    VerticalAlignment="Center"
+                                                                    TextElement.Foreground="{StaticResource Gray700Brush}"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="{StaticResource Neutral300Brush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
 </Window>

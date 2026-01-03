@@ -1,76 +1,230 @@
-A) Project Map
-- MVVM framework: Custom MVVM (INotifyPropertyChanged + RelayCommand/ViewModelCommand + ViewModelBase in POS/ViewModels).
-- DataAccess: EF Core 8 + SQL Server via POS.Persistence/Context/AppDbContext.cs (IdentityDbContext).
-- Key folders: POS/Views, POS/CustomControl, POS/Dialogs, POS/ViewModels, POS.Domain/Models, POS.Persistence/Context, POS.Persistence/Migrations, POS.Application/Contracts, POS.Infrustructure/Services.
+# Customer Module Audit Report
 
-B) Existing Components (with paths)
-- Customer entity/model: POS.Domain/Models/Customer.cs; DbSet in POS.Persistence/Context/AppDbContext.cs.
-- Customer list/details UI: POS/CustomControl/Customer_Add_UserControl.xaml; POS/ViewModels/AddCustomersDialogViewModel.cs; POS/ViewModels/AddOrEditPersonViewModel.cs; POS/Dialogs/AddCustomersDialog.xaml; POS/Views/CustomersWindow.xaml (empty grid).
-- POS/Sale/Invoice workflow: POS/CustomControl/POS_UserControl.xaml; POS/ViewModels/POSViewModel.cs; POS.Domain/Models/Invoice.cs; POS.Domain/Models/Products/SaleProduct.cs; POS.Domain/Models/Payments/InvoicePayment.cs; POS/ViewModels/SalesHistoryViewModel.cs; POS/CustomControl/SalesHistory_UserControl.xaml.
-- Payment/Cash workflow: POS/Dialogs/PaymentDialog.xaml; POS/ViewModels/PaymentDialogViewModel.cs; POS.Domain/Models/Payments/InvoicePayment.cs; POS.Domain/Models/Payments/PaymentMethods/{Cash,Bank,Cheque,CreditCard}.cs; POS.Domain/Models/E-Invoice/PaymentMethod.cs.
-- Ledger/Statement/AR: No ledger/statement models or services found. Only menu identifiers (customerLedger, supplierLedger, generalLedger, trialBalance) in POS/Views/HomeWindow.xaml.cs.
-- Soft delete mechanism: Not found. AddOrEditPersonViewModel.cs deletes via _dbContext.Set<T>().Remove(...) with SaveChanges().
+## A) Project Map
 
-C) Discovered Naming (names discovered)
-- Entity name for customer: Customer (POS.Domain.Models.Customer).
-- Default/Walk-in customer name (if found): Not found (no WalkIn/DefaultCustomer strings; no customer seed in migrations).
-- Service names used for sales: None; logic is in POS/ViewModels/POSViewModel.cs and POS/ViewModels/Base/BaseProductsViewModel.cs.
-- Service names used for payments/cash: None; POS writes InvoicePayment directly in POS/ViewModels/POSViewModel.cs.
-- Existing enums/types for payment methods: PaymentType enum in POS.Domain/Models/Payments/InvoicePayment.cs (Cash, CreditCard, BankTransfer, Cheque, Other, OnAccount); TransactionType/CurrencyType enums in POS.Domain/Models/Payments/PaymentMethods/Cash.cs; POS.Domain.Models.E_Invoice.PaymentMethod entity.
-- Invoice numbering scheme: GetNextInvoiceNumber() in POS/ViewModels/POSViewModel.cs uses prefix "INV-" and 3-digit sequence.
+### MVVM Framework
+- **Pattern**: Custom MVVM implementation using `INotifyPropertyChanged`
+- **Commands**: `RelayCommand` and `ViewModelCommand` classes
+- **No MVVM framework**: Pure WPF with manual property change notifications
 
-D) Gaps
-- No default/walk-in customer seed or ensure logic.
-- POS UI has no customer selector (no Customer binding in POS/CustomControl/POS_UserControl.xaml) even though BaseProductsViewModel exposes Customers/SelectedCustomer.
-- No ledger/statement entity or service to compute running balance; report menu entries are not wired to a view.
-- No dedicated customer payment workflow (separate from invoice) and no link between customer selection and payment in POS flow.
-- Cash movement tracking is not implemented; Cash entity exists but not used by POS when saving invoice payments.
-- Customer deletion is hard delete; no archive/soft delete flag or flow.
+### DataAccess
+- **ORM**: Entity Framework Core
+- **Database**: SQL Server (via `AppDbContext`)
+- **Context Location**: `POS.Persistence.Context.AppDbContext`
+- **Pattern**: Direct DbContext usage in ViewModels (not Repository pattern)
 
-E) Decision
-- Partial. Core Customer/Invoice/InvoicePayment entities and POS sale flow exist, but default customer, ledger/statement, customer payments, and soft delete are missing.
-- Decision logic: extend existing POS/Invoice/Payment flow using current entities and UI wiring; add only the missing ledger/statement and customer payment flow with a single shared service for business logic; introduce soft delete/archiving for Customer and update queries to respect it. No duplicate payment enums or parallel services.
+### Key Folders
+```
+POS/
+├── Views/                      # Main windows (LoginView, HomeWindow)
+├── ViewModels/                 # All ViewModels
+│   └── Base/                   # BaseProductsViewModel (shared POS logic)
+├── CustomControl/              # UserControls for each feature
+├── Dialogs/                    # Dialog windows
+├── Validations/                # Converters and behaviors
 
-F) Minimal Plan (file-by-file)
-- POS/ViewModels/Base/BaseProductsViewModel.cs: load/select default customer (once discovered or ensured) and keep SelectedCustomer consistent.
-- POS/CustomControl/POS_UserControl.xaml: add customer selection bound to Customers/SelectedCustomer.
-- POS/ViewModels/POSViewModel.cs: persist SelectedCustomer on Invoice; handle paid vs due; create ledger entries and payment records using existing types.
-- POS/Dialogs/PaymentDialog.xaml + POS/ViewModels/PaymentDialogViewModel.cs: reuse or extend for customer payment input if applicable (avoid new dialog if not needed).
-- POS/ViewModels/AddOrEditPersonViewModel.cs: replace hard delete with archive/soft delete after a proper flag is introduced.
-- POS/Views/HomeWindow.xaml.cs: wire a Customer Statement view when it exists.
-- New files only if required (no existing ledger components): add a single ledger entry model + service (names TBD based on repo naming) and a minimal statement View/ViewModel; add DbSet + migration to AppDbContext if ledger is persisted.
+POS.Domain/
+├── Models/                     # All entities
+│   ├── Customer.cs             # Customer entity
+│   ├── CustomerLedgerEntry.cs  # Ledger entries
+│   ├── Invoice.cs              # Sales invoice
+│   └── Payments/               # Payment-related models
+│       └── PaymentMethods/     # Cash, etc.
 
-G) Changes Applied
-- Added ledger entity + DbSet + service for customer statement and running balance: POS.Domain/Models/CustomerLedgerEntry.cs; POS.Persistence/Context/AppDbContext.cs; POS.Application/Contracts/Services/ICustomerLedgerService.cs; POS.Infrustructure/Services/CustomerLedgerService.cs.
-- Added default/walk-in handling + archive flags: POS.Domain/Models/Customer.cs; POS/ViewModels/Base/BaseProductsViewModel.cs; POS/ViewModels/AddOrEditPersonViewModel.cs.
-- POS integration for customer selection + due handling + ledger/cash recording: POS/CustomControl/POS_UserControl.xaml; POS/ViewModels/POSViewModel.cs.
-- Customer statement + payment UI + wiring: POS/CustomControl/CustomerLedger_UserControl.xaml; POS/CustomControl/CustomerLedger_UserControl.xaml.cs; POS/ViewModels/CustomerLedgerViewModel.cs; POS/Views/HomeWindow.xaml.cs.
-- Service fix for accurate running balance with date filters (opening balance used when no entries): POS.Infrustructure/Services/CustomerLedgerService.cs; POS/ViewModels/CustomerLedgerViewModel.cs.
-- Ledger payment method now reflects actual payment on partial sales: POS.Application/Contracts/Services/ICustomerLedgerService.cs; POS.Infrustructure/Services/CustomerLedgerService.cs; POS/ViewModels/POSViewModel.cs.
-- Customer UI live search + POS auto-refresh after add/edit/archive: POS/CustomControl/Customer_Add_UserControl.xaml; POS/ViewModels/AddOrEditPersonViewModel.cs; POS/ViewModels/Base/BaseProductsViewModel.cs; POS/App.xaml.cs.
-- Added EF migration for ledger + customer archive/default: POS.Persistence/Migrations/20251231105512_AddCustomerLedgerAndArchive.cs (+ Designer) and updated snapshot.
+POS.Application/
+└── Contracts/Services/         # Service interfaces
+    └── ICustomerLedgerService.cs
 
-H) Final List of Modified Files
-- POS.Application/Contracts/Services/ICustomerLedgerService.cs
-- POS/CustomControl/CustomerLedger_UserControl.xaml
-- POS/CustomControl/CustomerLedger_UserControl.xaml.cs
-- POS/CustomControl/POS_UserControl.xaml
-- POS.Domain/Models/Customer.cs
-- POS.Domain/Models/CustomerLedgerEntry.cs
-- POS.Infrustructure/InfrustructureDependencies.cs
-- POS.Infrustructure/Services/CustomerLedgerService.cs
-- POS.Infrustructure/POS.Infrustructure.csproj
-- POS.Persistence/Context/AppDbContext.cs
-- POS.Persistence/Migrations/20251231105512_AddCustomerLedgerAndArchive.cs
-- POS.Persistence/Migrations/20251231105512_AddCustomerLedgerAndArchive.Designer.cs
-- POS.Persistence/Migrations/AppDbContextModelSnapshot.cs
-- POS/App.xaml.cs
-- POS/ViewModels/AddOrEditPersonViewModel.cs
-- POS/ViewModels/Base/BaseProductsViewModel.cs
-- POS/ViewModels/CustomerLedgerViewModel.cs
-- POS/ViewModels/POSViewModel.cs
-- POS/CustomControl/Customer_Add_UserControl.xaml
-- POS/Views/HomeWindow.xaml.cs
+POS.Infrustructure/
+└── Services/                   # Service implementations
+    └── CustomerLedgerService.cs
 
-I) Notes / Remaining
-- Apply migration to the database (Update-Database or `dotnet ef database update`).
+POS.Persistence/
+└── Context/
+    └── AppDbContext.cs         # EF Core DbContext
+```
+
+---
+
+## B) Existing Components (with exact paths)
+
+### Customer Entity/Model
+- **Entity**: `POS.Domain.Models.Customer`
+- **Path**: `d:\POS\POS.Domain\Models\Customer.cs`
+- **Properties**:
+  - `Id`, `Name`, `Phone`, `Email`, `Address`, `Notes`
+  - `IsDefault` (bool) - marks default/walk-in customer
+  - `IsArchived` (bool) - soft delete mechanism
+  - Navigation: `Invoices`, `LedgerEntries`
+
+### CustomerLedgerEntry Entity
+- **Entity**: `POS.Domain.Models.CustomerLedgerEntry`
+- **Path**: `d:\POS\POS.Domain\Models\CustomerLedgerEntry.cs`
+- **Properties**:
+  - `Id`, `CustomerId`, `Date`, `ReferenceType`, `ReferenceNumber`
+  - `Description`, `Debit`, `Credit`, `RunningBalance`
+  - `PaymentMethod`
+  - Navigation: `Customer`
+
+### Customer List/Details UI
+- **Add Customer**: `POS.CustomControl.Customer_Add_UserControl`
+- **Customer List**: `POS.CustomControl.Customers_UserControl`
+- **ViewModel**: `POS.ViewModels.AddOrEditPersonViewModel`
+
+### POS/Sale/Invoice Workflow
+- **POS View**: `POS.CustomControl.POS_UserControl`
+- **POS ViewModel**: `POS.ViewModels.POSViewModel` (extends `BaseProductsViewModel`)
+- **Base ViewModel**: `POS.ViewModels.Base.BaseProductsViewModel`
+  - Contains: `SelectedCustomer`, `Customers`, `CustomersView`, `CustomerSearchText`
+  - Loads customers in constructor via `LoadCustomers()`
+  - Uses `ICustomerLedgerService.EnsureDefaultCustomer()` to get/create default customer
+- **Invoice Entity**: `POS.Domain.Models.Invoice`
+  - Has `CustomerId` and `Customer` navigation property
+- **Sales History**: `POS.CustomControl.SalesHistory_UserControl`
+- **Sales History ViewModel**: `POS.ViewModels.SalesHistoryViewModel`
+
+### Payment/Cash Workflow
+- **Cash Entity**: `POS.Domain.Models.Payments.PaymentMethods.Cash`
+- **Transaction Types**: `TransactionType` enum (Income, Outcome)
+- **Currency Types**: `CurrencyType` enum (EGP, USD, etc.)
+- **Invoice has**: `AmountPaid`, `ChangeAmount`, `PaymentMethod`, `BillBreakdown`
+- **InvoicePayment**: Links Invoice to Cash payments
+
+### Ledger/Statement/AR
+- **Service Interface**: `POS.Application.Contracts.Services.ICustomerLedgerService`
+- **Service Implementation**: `POS.Infrustructure.Services.CustomerLedgerService`
+- **Key Methods**:
+  - `EnsureDefaultCustomer()` / `EnsureDefaultCustomerAsync()`
+  - `GetDefaultCustomer()`, `IsDefaultCustomer()`, `IsDefaultCustomerId()`
+  - `GetStatementEntries()` - returns entries with RunningBalance
+  - `GetOpeningBalance()` - calculates balance before a date
+  - `GetCurrentBalances()` - batch balance lookup
+  - `RecordInvoiceEntries()` - records sale + payment ledger entries
+  - `RecordCustomerPayment()` - records customer payment
+  - `RecordCashMovement()` - records cash drawer movement
+  - `HasCustomerTransactions()` - prevents deletion of customer with transactions
+
+### Soft Delete Mechanism
+- **Customer.IsArchived**: Boolean flag for soft delete
+- **Query filtering**: `_dbContext.Customers.Where(c => !c.IsArchived)`
+- **Deletion protection**: `HasCustomerTransactions()` checks before archive
+
+### DI Registration
+- **Location**: `POS.Infrustructure.InfrustructureDependencies`
+- **Services registered**:
+  - `IExcelService` -> `ExcelService`
+  - `ICustomerLedgerService` -> `CustomerLedgerService`
+
+---
+
+## C) Discovered Naming
+
+| Component | Discovered Name |
+|-----------|-----------------|
+| Entity name for customer | `Customer` |
+| Default/Walk-in customer name | `"عميل افتراضي"` (created by `EnsureDefaultCustomer`) |
+| Customer.IsDefault flag | `IsDefault = true` marks default customer |
+| Service for sales | N/A (logic in ViewModels) |
+| Service for payments/cash | `ICustomerLedgerService.RecordCashMovement()` |
+| Service for ledger | `ICustomerLedgerService` |
+| Payment methods (Invoice) | String: `"نقدي"`, `"آجل"`, `"بطاقة ائتمان"`, `"محفظة الكترونية"` |
+| Transaction types | `TransactionType.Income`, `TransactionType.Outcome` |
+| Soft delete field | `Customer.IsArchived` |
+
+---
+
+## D) Gaps
+
+### Existing and Working:
+1. Customer entity with `IsDefault` and `IsArchived`
+2. CustomerLedgerEntry with Debit/Credit/RunningBalance
+3. ICustomerLedgerService fully implemented:
+   - Default customer creation
+   - Ledger entry recording
+   - Cash movement recording
+   - Customer payment recording
+   - Statement with running balance
+   - Deletion protection
+4. Customer selection in POS (BaseProductsViewModel)
+5. Customer list/add UI
+
+### Minor Gaps to Address:
+1. **POS Save Integration**: Need to verify `POSViewModel.CompletePayment` calls ledger service
+2. **Customer Statement UI**: May need dedicated view for statement display
+3. **Customer Payment UI**: Need dedicated view for recording customer payments (if not exists)
+4. **Due Amount Handling**: Verify due amount creates ledger debit for non-walk-in customers
+
+---
+
+## E) Decision
+
+**Status: PARTIAL - Most exists, minor integration needed**
+
+The Customer Module is **substantially complete**:
+- Core entities exist: `Customer`, `CustomerLedgerEntry`, `Invoice`, `Cash`
+- Service layer exists: `ICustomerLedgerService` with full implementation
+- POS has customer selection with default customer logic
+- Soft delete mechanism in place
+
+**What needs verification/integration:**
+1. POSViewModel's `CompletePayment` must call `RecordInvoiceEntries()` and `RecordCashMovement()`
+2. Customer Statement view for displaying ledger entries
+3. Customer Payment view for recording payments
+
+---
+
+## F) Minimal Plan (file-by-file)
+
+### Phase 1: Verify POS Integration (Existing Files)
+| File | Action |
+|------|--------|
+| `POS\ViewModels\POSViewModel.cs` | Verify/add ledger integration in `CompletePayment` |
+
+### Phase 2: Customer Statement UI (May Need New)
+| File | Action |
+|------|--------|
+| `POS\CustomControl\CustomerStatement_UserControl.xaml` | Create if not exists |
+| `POS\ViewModels\CustomerStatementViewModel.cs` | Create if not exists |
+
+### Phase 3: Customer Payment UI (May Need New)
+| File | Action |
+|------|--------|
+| `POS\CustomControl\CustomerPayment_UserControl.xaml` | Create if not exists |
+| `POS\ViewModels\CustomerPaymentViewModel.cs` | Create if not exists |
+
+### Files NOT to Create (Already Exist):
+- Customer.cs (exists)
+- CustomerLedgerEntry.cs (exists)
+- ICustomerLedgerService.cs (exists)
+- CustomerLedgerService.cs (exists)
+- Customer_Add_UserControl.xaml (exists)
+- Customers_UserControl.xaml (exists)
+
+---
+
+## G) Navigation/Architecture Findings (for HomeWindow Refactor)
+
+### Current Navigation Pattern
+- **HomeWindow.xaml.cs**: Uses switch/case `CreateControlForMenuItem()`
+- **No NavigationService**: Direct UserControl instantiation
+- **No PageFactory**: Manual control creation
+- **No TabManager**: Tab management in code-behind
+
+### TreeView Navigation Issue
+- Multiple event triggers may cause double navigation
+- Need to consolidate to single event handler
+
+### Performance Issues Identified
+1. ViewModels load data in constructors (blocking UI)
+2. No async loading pattern
+3. No virtualization in some DataGrids
+4. No cancellation tokens for DB operations
+
+---
+
+## Document Status
+
+- **Created**: 2026-01-02
+- **Author**: Claude Code Agent
+- **Phase**: Discovery Complete
+- **Next Step**: Proceed to Implementation Phase

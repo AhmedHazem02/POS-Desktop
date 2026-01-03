@@ -12,9 +12,9 @@ namespace POS.CustomControl
 
         public POS_UserControl()
         {
+            InitializeComponent();
             viewModel = new POSViewModel();
             DataContext = viewModel;
-            InitializeComponent();
         }
 
         private void ImageListBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

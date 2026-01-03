@@ -854,11 +854,17 @@ if (_quantity != value)
             LoadCategoriesWithProducts();
 
             App.CustomersChanged += OnCustomersChanged;
+            App.WarehousesChanged += OnWarehousesChanged;
         }
 
         private void OnCustomersChanged()
         {
             LoadCustomers();
+        }
+        
+        private void OnWarehousesChanged()
+        {
+            LoadWarehouses();
         }
         private void LoadWarehouses()
         {
@@ -867,11 +873,26 @@ if (_quantity != value)
             ObservableCollection<Warehouse> warehouses = new ObservableCollection<Warehouse>(query.ToList());
 
             Warehouses = warehouses;
+            
+            // Debug: Check warehouse count
+            System.Diagnostics.Debug.WriteLine($"Warehouses loaded: {Warehouses?.Count ?? 0}");
+            
             if (Warehouses != null && Warehouses.Count > 0)
             {
                 SelectedWarehouse = Warehouses.FirstOrDefault();
+                System.Diagnostics.Debug.WriteLine($"Selected warehouse: {SelectedWarehouse?.Name}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("No warehouses found in database");
             }
         }
+        
+        public void RefreshWarehouses()
+        {
+            LoadWarehouses();
+        }
+        
         private void LoadSuppliers()
         {
             IQueryable<Supplier> query = _dbContext.Suppliers; // Initial query

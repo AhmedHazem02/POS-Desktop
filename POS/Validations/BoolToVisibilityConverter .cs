@@ -10,10 +10,11 @@ namespace POS.Validations
         {
             if (value is bool boolValue)
             {
-                if (boolValue)
-                    return Visibility.Visible;
-                else
-                    return Visibility.Collapsed;
+                // Check if parameter is "inverse" to invert the boolean
+                bool isInverse = parameter?.ToString()?.ToLower() == "inverse";
+                bool result = isInverse ? !boolValue : boolValue;
+                
+                return result ? Visibility.Visible : Visibility.Collapsed;
             }
             return DependencyProperty.UnsetValue;
         }
@@ -22,7 +23,9 @@ namespace POS.Validations
         {
             if (value is Visibility visibility)
             {
-                return visibility == Visibility.Visible;
+                bool isInverse = parameter?.ToString()?.ToLower() == "inverse";
+                bool result = visibility == Visibility.Visible;
+                return isInverse ? !result : result;
             }
             return DependencyProperty.UnsetValue;
         }

@@ -1,195 +1,338 @@
 <UserControl x:Class="POS.Views.Dashboard"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="900" d:DesignWidth="1400"
              FlowDirection="RightToLeft"
-             Background="#F5F7FA">
+             FontFamily="Segoe UI, Cairo">
+
     <UserControl.Resources>
-        <!-- Animation for elements sliding up and fading in -->
-        <Storyboard x:Key="FadeInAndUp">
-            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.5" />
-            <ThicknessAnimation Storyboard.TargetProperty="Margin" From="0,20,0,0" To="0" Duration="0:0:0.5">
-                <ThicknessAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </ThicknessAnimation.EasingFunction>
-            </ThicknessAnimation>
-        </Storyboard>
-        
-        <Style TargetType="lvc:Axis">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="#AEB3B7" />
-        </Style>
-        <Style x:Key="SummaryCardStyle" TargetType="materialDesign:Card">
-            <Setter Property="Padding" Value="25" />
-            <Setter Property="Margin" Value="10" />
-            <Setter Property="UniformCornerRadius" Value="15" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect ShadowDepth="0" Color="#DCE4F1" Opacity="0.5" BlurRadius="15"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Assets/UltraModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+            <Storyboard x:Key="FadeInAnimation">
+                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.6">
+                    <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseOut"/>
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+
+            <Style x:Key="QuickAccessCard" TargetType="Button">
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Margin" Value="8"/>
+                <Setter Property="Width" Value="220"/>
+                <Setter Property="Height" Value="140"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="CardBorder"
+                                    CornerRadius="20"
+                                    Padding="24"
+                                    Background="{TemplateBinding Background}"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                                <Border.Effect>
+                                    <DropShadowEffect x:Name="CardShadow" ShadowDepth="4" BlurRadius="20" Color="{Binding GlowColor, FallbackValue=#6366F1}" Opacity="0.25"/>
+                                </Border.Effect>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="CardBorder"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                 To="1.05" Duration="0:0:0.2" EasingFunction="{StaticResource CubicEaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="CardBorder"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                 To="1.05" Duration="0:0:0.2" EasingFunction="{StaticResource CubicEaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="CardShadow"
+                                                                 Storyboard.TargetProperty="Opacity"
+                                                                 To="0.5" Duration="0:0:0.2"/>
+                                                <DoubleAnimation Storyboard.TargetName="CardShadow"
+                                                                 Storyboard.TargetProperty="BlurRadius"
+                                                                 To="30" Duration="0:0:0.2"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="CardBorder"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                 To="1" Duration="0:0:0.2" EasingFunction="{StaticResource CubicEaseIn}"/>
+                                                <DoubleAnimation Storyboard.TargetName="CardBorder"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                 To="1" Duration="0:0:0.2" EasingFunction="{StaticResource CubicEaseIn}"/>
+                                                <DoubleAnimation Storyboard.TargetName="CardShadow"
+                                                                 Storyboard.TargetProperty="Opacity"
+                                                                 To="0.25" Duration="0:0:0.2"/>
+                                                <DoubleAnimation Storyboard.TargetName="CardShadow"
+                                                                 Storyboard.TargetProperty="BlurRadius"
+                                                                 To="20" Duration="0:0:0.2"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="CardBorder" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="StatCard" TargetType="Border">
+                <Setter Property="CornerRadius" Value="20"/>
+                <Setter Property="Padding" Value="24"/>
+                <Setter Property="Background" Value="#F8FAFC"/> <Setter Property="Margin" Value="8,0"/>
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="15" Color="#000000" Opacity="0.06"/>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+             <CubicEase x:Key="CubicEaseOut" EasingMode="EaseOut"/>
+            <CubicEase x:Key="CubicEaseIn" EasingMode="EaseIn"/>
+
+        </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*" />
-            <ColumnDefinition Width="1*" />
-        </Grid.ColumnDefinitions>
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource FadeInAnimation}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
 
-        <!-- Main Content Area -->
-        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="30, 30, 10, 30">
-                <!-- Header -->
-                <Grid Margin="10,0,10,20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+    <Grid Background="{StaticResource BackgroundGradientBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <RowDefinition Height="Auto"/> <RowDefinition Height="*"/>    </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="أهلاً بعودتك!" FontSize="32" FontWeight="Bold" Foreground="#1A202C"/>
-                        <TextBlock x:Name="CurrentDateTextBlock" Text="نجعل إدارة أعمالك أسهل من أي وقت مضى" FontSize="16" Foreground="#718096" Margin="0,5,0,0"/>
+        <Border Grid.Row="0" CornerRadius="0,0,30,30" Margin="0,0,0,24">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#1E3A8A" Offset="0"/> <GradientStop Color="#3B82F6" Offset="0.5"/> <GradientStop Color="#8B5CF6" Offset="1"/> </LinearGradientBrush>
+            </Border.Background>
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="4" BlurRadius="20" Color="#3B82F6" Opacity="0.3"/>
+            </Border.Effect>
+            <Grid Margin="32,28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="64" Height="64" CornerRadius="32" BorderBrush="White" BorderThickness="3">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="Black" Opacity="0.2"/>
+                        </Border.Effect>
+                        <Border.Background>
+                            <ImageBrush ImageSource="/Assets/pic/arp-tran-removebg-preview.png" Stretch="UniformToFill"/>
+                        </Border.Background>
+                    </Border>
+                    <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding UserName, FallbackValue='اسم المستخدم'}" FontSize="20" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="{Binding UserRole, FallbackValue='مدير النظام'}" FontSize="14" Foreground="#E0E7FF" Margin="0,4,0,0"/>
                     </StackPanel>
-                    
-                    <ComboBox Grid.Column="1" HorizontalAlignment="Left" Width="180" materialDesign:HintAssist.Hint="آخر 15 يوماً" Style="{StaticResource MaterialDesignOutlinedComboBox}" VerticalAlignment="Center">
-                        <ComboBoxItem Content="آخر 15 يوماً" />
-                        <ComboBoxItem Content="آخر 30 يوماً" />
-                        <ComboBoxItem Content="آخر 3 أشهر" />
-                        <ComboBoxItem Content="آخر 6 أشهر" />
-                    </ComboBox>
-                </Grid>
+                </StackPanel>
 
-                <!-- Summary Cards -->
-                <ItemsControl x:Name="SummaryCards" ItemsSource="{Binding SummaryCards}">
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="لوحة التحكم" FontSize="28" FontWeight="ExtraBold" Foreground="White" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentDate, StringFormat='{}{0:dddd، dd MMMM yyyy}'}" FontSize="14" Foreground="#E0E7FF" HorizontalAlignment="Center" Margin="0,6,0,0" Opacity="0.9"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource MaterialDesignIconButton}"
+                            Foreground="White" Width="48" Height="48" Margin="6,0"
+                            ToolTip="الإشعارات">
+                        <Grid>
+                            <materialDesign:PackIcon Kind="BellOutline" Width="26" Height="26"/>
+                            <Border Width="20" Height="20" CornerRadius="10" Background="#EF4444" BorderBrush="White" BorderThickness="2"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
+                                    Visibility="{Binding HasNotifications, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Visible}">
+                                <TextBlock Text="{Binding NotificationCount, FallbackValue='3'}" FontSize="10" FontWeight="Bold"
+                                           Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Button>
+
+                    <Button Style="{StaticResource MaterialDesignIconButton}"
+                            Command="{Binding RefreshCommand}"
+                            Foreground="White" Width="48" Height="48" Margin="6,0"
+                            ToolTip="تحديث البيانات">
+                        <materialDesign:PackIcon Kind="Refresh" Width="26" Height="26"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <UniformGrid Grid.Row="1" Columns="4" Margin="16,0,16,24">
+            
+            <Border Style="{StaticResource StatCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="مبيعات اليوم" FontSize="14" FontWeight="Medium" Foreground="{StaticResource Gray600Brush}"/>
+                        <TextBlock Text="{Binding TodaySales, StringFormat='{}{0:N0} جنيه', FallbackValue='1,250,000 جنيه'}" FontSize="26" FontWeight="Black"
+                                   Foreground="{StaticResource Gray900Brush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Width="56" Height="56" CornerRadius="16">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#059669" Offset="0"/>
+                                <GradientStop Color="#10B981" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="2" BlurRadius="10" Color="#10B981" Opacity="0.4"/>
+                        </Border.Effect>
+                        <materialDesign:PackIcon Kind="CashMultiple" Width="28" Height="28" Foreground="White"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}">
+                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="فواتير المبيعات" FontSize="14" FontWeight="Medium" Foreground="{StaticResource Gray600Brush}"/>
+                        <TextBlock Text="{Binding SalesInvoiceCount, StringFormat='{}{0} فاتورة', FallbackValue='45 فاتورة'}" FontSize="26" FontWeight="Black"
+                                   Foreground="{StaticResource Gray900Brush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Width="56" Height="56" CornerRadius="16">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#2563EB" Offset="0"/>
+                                <GradientStop Color="#3B82F6" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="2" BlurRadius="10" Color="#3B82F6" Opacity="0.4"/>
+                        </Border.Effect>
+                        <materialDesign:PackIcon Kind="Receipt" Width="28" Height="28" Foreground="White"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}">
+                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="المنتجات المسجلة" FontSize="14" FontWeight="Medium" Foreground="{StaticResource Gray600Brush}"/>
+                        <TextBlock Text="{Binding ProductCount, StringFormat='{}{0} منتج', FallbackValue='1,204 منتج'}" FontSize="26" FontWeight="Black"
+                                   Foreground="{StaticResource Gray900Brush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Width="56" Height="56" CornerRadius="16">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#7C3AED" Offset="0"/>
+                                <GradientStop Color="#A855F7" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="2" BlurRadius="10" Color="#A855F7" Opacity="0.4"/>
+                        </Border.Effect>
+                        <materialDesign:PackIcon Kind="PackageVariantClosed" Width="28" Height="28" Foreground="White"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}">
+                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="العملاء المسجلون" FontSize="14" FontWeight="Medium" Foreground="{StaticResource Gray600Brush}"/>
+                        <TextBlock Text="{Binding CustomerCount, StringFormat='{}{0} عميل', FallbackValue='350 عميل'}" FontSize="26" FontWeight="Black"
+                                   Foreground="{StaticResource Gray900Brush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Width="56" Height="56" CornerRadius="16">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#EA580C" Offset="0"/>
+                                <GradientStop Color="#F97316" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="2" BlurRadius="10" Color="#F97316" Opacity="0.4"/>
+                        </Border.Effect>
+                        <materialDesign:PackIcon Kind="AccountGroup" Width="28" Height="28" Foreground="White"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </UniformGrid>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="24,0,24,24">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="빠른 액세스" FontSize="22" FontWeight="Bold"
+                           Foreground="{StaticResource Gray900Brush}" Margin="8,0,8,20"/>
+
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding QuickAccessCards}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Columns="4" />
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <materialDesign:Card Style="{StaticResource SummaryCardStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="#718096" />
-                                        <TextBlock Text="{Binding Value}" FontSize="28" FontWeight="Bold" Foreground="#1A202C" Margin="0,5,0,0"/>
-                                    </StackPanel>
-
-                                    <materialDesign:PackIcon Grid.Column="1" Kind="{Binding Icon}" Width="40" Height="40" 
-                                                             Foreground="{Binding Color}" VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </materialDesign:Card>
+                            <Button Style="{StaticResource QuickAccessCard}"
+                                    Background="{Binding GradientBrush}"
+                                    Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding Identifier}"
+                                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Visible}">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Border Width="64" Height="64" CornerRadius="20" Background="#FFFFFF40" Margin="0,0,0,16">
+                                        <materialDesign:PackIcon Kind="{Binding Icon, FallbackValue=ViewDashboard}" Width="36" Height="36"
+                                                                 Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="{Binding Title, FallbackValue='메뉴 항목'}" FontSize="18" FontWeight="Bold"
+                                               Foreground="White" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-
-                <!-- Charts -->
-                <Grid Margin="0,20,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="1*" />
-                    </Grid.ColumnDefinitions>
-
-                    <materialDesign:Card x:Name="SalesChartCard" Grid.Column="0" Style="{StaticResource SummaryCardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="ملخص المبيعات" FontSize="18" FontWeight="SemiBold" Foreground="#1A202C" Margin="0,0,0,15"/>
-                            <lvc:CartesianChart Series="{Binding SalesSeriesCollection}" Height="300" LegendLocation="None">
-                                <lvc:CartesianChart.Resources>
-                                    <Style TargetType="lvc:LineSeries">
-                                        <Setter Property="Stroke" Value="#4299E1" />
-                                        <Setter Property="Fill">
-                                            <Setter.Value>
-                                                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                                                    <GradientStop Color="#4299E1" Offset="0"/>
-                                                    <GradientStop Color="#BEE3F8" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </lvc:CartesianChart.Resources>
-                                <lvc:CartesianChart.ChartLegend>
-                                    <lvc:DefaultLegend BulletSize="20"></lvc:DefaultLegend>
-                                </lvc:CartesianChart.ChartLegend>
-                                <lvc:CartesianChart.AxisX>
-                                    <lvc:Axis Title="الأيام" Labels="{Binding ArabicLabels}" />
-                                </lvc:CartesianChart.AxisX>
-                                <lvc:CartesianChart.AxisY>
-                                    <lvc:Axis Title="قيمة المبيعات" LabelFormatter="{Binding Formatter}" />
-                                </lvc:CartesianChart.AxisY>
-                            </lvc:CartesianChart>
-                        </StackPanel>
-                    </materialDesign:Card>
-
-                    <materialDesign:Card x:Name="InventoryChartCard" Grid.Column="1" Style="{StaticResource SummaryCardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="أعلى المنتجات مخزوناً" FontSize="18" FontWeight="SemiBold" Foreground="#1A202C" Margin="0,0,0,15"/>
-                            <lvc:PieChart Series="{Binding ProductInventorySeriesCollection}" Height="300" LegendLocation="Bottom">
-                                <lvc:PieChart.ChartLegend>
-                                    <lvc:DefaultLegend Orientation="Horizontal" />
-                                </lvc:PieChart.ChartLegend>
-                                <lvc:PieChart.DataTooltip>
-                                    <lvc:DefaultTooltip BulletSize="15" />
-                                </lvc:PieChart.DataTooltip>
-                            </lvc:PieChart>
-                        </StackPanel>
-                    </materialDesign:Card>
-                </Grid>
-
-            </StackPanel>
+            </Grid>
         </ScrollViewer>
-
-        <!-- Right Sidebar -->
-        <Border Grid.Column="1" Background="White" Padding="20" Margin="10, 30, 30, 30" CornerRadius="15">
-            <StackPanel>
-                <materialDesign:Card UniformCornerRadius="15" Margin="0,0,0,20" Background="#EDF2F7">
-                     <Image Source="/Assets/pic/arp-tran-removebg-preview.png" Stretch="Uniform" Height="120" Margin="20"/>
-                </materialDesign:Card>
-                
-                <Calendar Language="ar-EG" Margin="0,0,0,20" />
-
-                <materialDesign:Card Padding="20" UniformCornerRadius="15">
-                    <StackPanel>
-                        <TextBlock Text="مهام سريعة" FontSize="18" FontWeight="SemiBold" Foreground="#1A202C" Margin="0,0,0,15"/>
-                        <Button Style="{StaticResource MaterialDesignRaisedLightButton}" Margin="0,5">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <TextBlock Text="فاتورة بيع جديدة" />
-                            </StackPanel>
-                        </Button>
-                         <Button Style="{StaticResource MaterialDesignRaisedLightButton}" Margin="0,5">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <TextBlock Text="فاتورة شراء جديدة" />
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,5">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="ChartBar" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <TextBlock Text="عرض التقارير" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </materialDesign:Card>
-
-            </StackPanel>
-        </Border>
-
     </Grid>
-    <UserControl.Triggers>
-        <EventTrigger RoutedEvent="Loaded">
-            <BeginStoryboard Storyboard="{StaticResource FadeInAndUp}" />
-        </EventTrigger>
-    </UserControl.Triggers>
 </UserControl>

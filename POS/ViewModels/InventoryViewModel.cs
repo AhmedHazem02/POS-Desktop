@@ -74,6 +74,9 @@ namespace POS.ViewModels
             }
         }
         public ICommand ManageWarehouseCommand { get; }
+        public ICommand AddProductCommand { get; }
+        public ICommand EditProductCommand { get; }
+        public ICommand DeleteProductCommand { get; }
 
         private void ManageWarehouse(object obj)
         {
@@ -97,6 +100,76 @@ namespace POS.ViewModels
                 {
                     //// Payment was canceled
                     //MessageBox.Show("تم إلغاء ", " تم إلغاء", MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.OK, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            }
+        }
+
+        private void ShowAddProductPanel()
+        {
+            // Open the InventoryWindow for adding a new product
+            var inventoryWindow = new POS.Views.InventoryWindow();
+            inventoryWindow.ShowDialog();
+            
+            // Refresh the products list after closing the window
+            LoadProductsFromDatabase();
+        }
+
+        private void EditProduct(object parameter)
+        {
+            if (parameter is Product product)
+            {
+                // Open the InventoryWindow with the selected product for editing
+                var inventoryWindow = new POS.Views.InventoryWindow();
+                // Note: You might need to pass the product to the window's ViewModel
+                // For now, this opens the window in edit mode
+                inventoryWindow.ShowDialog();
+                
+                // Refresh the products list after closing the window
+                LoadProductsFromDatabase();
+            }
+        }
+
+        private void DeleteProduct(object parameter)
+        {
+            if (parameter is Product product)
+            {
+                // Confirm deletion
+                var result = MessageBox.Show(
+                    $"هل أنت متأكد من حذف المنتج '{product.Name}'؟",
+                    "تأكيد الحذف",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.No,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        _dbContext.Products.Remove(product);
+                        _dbContext.SaveChanges();
+                        
+                        // Remove from the list
+                        ProductsList.Remove(product);
+                        
+                        MessageBox.Show(
+                            "تم حذف المنتج بنجاح",
+                            "نجح",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information,
+                            MessageBoxResult.OK,
+                            MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            $"حدث خطأ أثناء حذف المنتج: {ex.Message}",
+                            "خطأ",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error,
+                            MessageBoxResult.OK,
+                            MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    }
                 }
             }
         }
@@ -1980,6 +2053,9 @@ namespace POS.ViewModels
             //Warhouses
             // Initialize commands
             ManageWarehouseCommand = new RelayCommand(ManageWarehouse);
+            AddProductCommand = new RelayCommand(_ => ShowAddProductPanel());
+            EditProductCommand = new RelayCommand(EditProduct);
+            DeleteProductCommand = new RelayCommand(DeleteProduct);
 
             // Initialize properties
             Warehouses = new ObservableCollection<Warehouse>();

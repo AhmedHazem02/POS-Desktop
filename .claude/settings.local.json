@@ -4,7 +4,10 @@
       "Bash(dotnet add:*)",
       "Bash(dotnet build:*)",
       "Bash(dotnet ef migrations add:*)",
-      "Bash(dotnet ef database update:*)"
+      "Bash(dotnet ef database update:*)",
+      "Bash(if not exist \"d:\\\\POS\\\\docs\" mkdir \"d:\\\\POS\\\\docs\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''d:\\\\POS\\\\docs''; New-Item -ItemType File -Force -Path ''d:\\\\POS\\\\docs\\\\customer-module-audit.md''\")",
+      "Bash(grep:*)"
     ]
   }
 }

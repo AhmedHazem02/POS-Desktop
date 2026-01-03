@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using POS.Application.Contracts.Services;
 using POS.Domain.Models;
@@ -194,7 +195,32 @@ namespace POS.ViewModels
         public ICommand EditItemCommand { get; private set; }
         public ICommand DeleteItemCommand { get; private set; }
         public ICommand FinishCommand { get; private set; }
+        public ICommand SaveCommand { get; private set; }
         #endregion
+
+        public string SaveButtonText => CurrentState == DialogState.Modify ? "تحديث" : "حفظ";
+
+        public enum DialogState
+        {
+            Add,
+            Modify
+        }
+
+        private DialogState _currentState = DialogState.Add;
+        public DialogState CurrentState
+        {
+            get => _currentState;
+            set
+            {
+                if (_currentState != value)
+                {
+                    _currentState = value;
+                    OnPropertyChanged(nameof(CurrentState));
+                    OnPropertyChanged(nameof(SaveButtonText));
+                }
+            }
+        }
+
 
         protected AddOrEditPersonViewModel()
         {
@@ -206,8 +232,26 @@ namespace POS.ViewModels
             SelectImageCommand = new RelayCommand(SelectImage);
             DeleteItemCommand = new RelayCommand(DeleteItem);
             FinishCommand = new RelayCommand(Finish);
+            SaveCommand = new RelayCommand(Save);
 
             ItemList = new ObservableCollection<T>();
+            LoadItems();
+        }
+
+        private void Save(object parameter)
+        {
+            if (CurrentState == DialogState.Modify)
+            {
+                Edit(parameter);
+            }
+            else
+            {
+                Add(parameter);
+            }
+        }
+
+        public void RefreshItems()
+        {
             LoadItems();
         }
 
@@ -216,7 +260,9 @@ namespace POS.ViewModels
             List<T> items;
             if (typeof(T) == typeof(Customer))
             {
-                var query = _dbContext.Set<Customer>().Where(c => !c.IsArchived);
+                var query = _dbContext.Set<Customer>()
+                    .AsNoTracking()
+                    .Where(c => !c.IsArchived);
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
                     var term = SearchText.Trim();
@@ -240,7 +286,7 @@ namespace POS.ViewModels
             }
             else
             {
-                items = _dbContext.Set<T>().ToList();
+                items = _dbContext.Set<T>().AsNoTracking().ToList();
             }
 
             ItemList.Clear();
@@ -287,9 +333,17 @@ namespace POS.ViewModels
         private void Add(object parameter)
         {
             StatusMessage = string.Empty;
+            
+            // Validate required fields
             if (string.IsNullOrWhiteSpace(Name))
             {
-                MessageBox.Show("يرجى توفير اسم.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusMessage = "⚠️ اسم العميل مطلوب";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Phone))
+            {
+                StatusMessage = "⚠️ رقم الهاتف مطلوب";
                 return;
             }
 
@@ -299,7 +353,7 @@ namespace POS.ViewModels
 
             if (nameExists)
             {
-                MessageBox.Show("اسم موجود بالفعل.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusMessage = "⚠️ اسم العميل موجود بالفعل";
                 return;
             }
 
@@ -312,7 +366,7 @@ namespace POS.ViewModels
             if (typeof(T) == typeof(Customer))
             {
                 LoadItems();
-                StatusMessage = "تم إضافة عميل بنجاح.";
+                MessageBox.Show("✅ تم إضافة العميل بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
@@ -320,49 +374,59 @@ namespace POS.ViewModels
             }
 
             ClearFields();
-
             NotifyCustomersChangedIfNeeded();
         }
 
         private void Edit(object parameter)
         {
             StatusMessage = string.Empty;
-            if (SelectedItem != null)
+            if (SelectedItem == null)
+                return;
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(Name))
             {
-                if (string.IsNullOrWhiteSpace(Name))
+                StatusMessage = "⚠️ اسم العميل مطلوب";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Phone))
+            {
+                StatusMessage = "⚠️ رقم الهاتف مطلوب";
+                return;
+            }
+
+            var nameExists = typeof(T) == typeof(Customer)
+            ? _dbContext.Set<Customer>().Any(c => c.Name == Name && !c.IsArchived && c.Id != SelectedItem.Id)
+            : _dbContext.Set<T>().Any(c => c.Name == Name && c.Id != SelectedItem.Id);
+
+            if (nameExists)
+            {
+                StatusMessage = "⚠️ اسم العميل موجود بالفعل";
+                return;
+            }
+
+            var itemToUpdate = _dbContext.Set<T>().Find(SelectedItem.Id);
+            if(itemToUpdate != null)
+            {
+                UpdateItemFromFields(itemToUpdate);
+                _dbContext.SaveChanges();
+
+                // Refresh item in the list
+                if (typeof(T) == typeof(Customer))
                 {
-                    MessageBox.Show("يرجى توفير اسم.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    LoadItems();
+                    MessageBox.Show("✅ تم تحديث العميل بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
-
-                var nameExists = typeof(T) == typeof(Customer)
-                ? _dbContext.Set<Customer>().Any(c => c.Name == Name && !c.IsArchived && c.Id != SelectedItem.Id)
-                : _dbContext.Set<T>().Any(c => c.Name == Name && c.Id != SelectedItem.Id);
-
-                if (nameExists)
+                else
                 {
-                    MessageBox.Show("اسم موجود بالفعل.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    var index = ItemList.IndexOf(SelectedItem);
+                    ItemList[index] = itemToUpdate;
                 }
-
-                var itemToUpdate = _dbContext.Set<T>().Find(SelectedItem.Id);
-                if(itemToUpdate != null)
-                {
-                    UpdateItemFromFields(itemToUpdate);
-                    _dbContext.SaveChanges();
-
-                    // Refresh item in the list
-                    if (typeof(T) == typeof(Customer))
-                    {
-                        LoadItems();
-                    }
-                    else
-                    {
-                        var index = ItemList.IndexOf(SelectedItem);
-                        ItemList[index] = itemToUpdate;
-                    }
-                    NotifyCustomersChangedIfNeeded();
-                }
+                
+                ClearFields();
+                CurrentState = DialogState.Add;
+                NotifyCustomersChangedIfNeeded();
             }
         }
 
@@ -501,22 +565,6 @@ namespace POS.ViewModels
                 App.NotifyCustomersChanged();
             }
         }
-        #region UI State
-        public enum DialogState { Add, Modify }
-        private DialogState _currentState;
-        public DialogState CurrentState
-        {
-            get { return _currentState; }
-            set
-            {
-                if (_currentState != value)
-                {
-                    _currentState = value;
-                    OnPropertyChanged(nameof(CurrentState));
-                }
-            }
-        }
-        #endregion
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -524,4 +572,5 @@ namespace POS.ViewModels
         }
     }
 }
+
 

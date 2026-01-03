@@ -123,6 +123,7 @@ namespace POS.Views
             });
 
             var inventoryAndPurchases = new MenuItem { Name = "المخزن والمشتريات", Identifier = "inventoryAndPurchases", Icon = PackIconKind.StoreOutline, IsClickable = false };
+            inventoryAndPurchases.Children.Add(new MenuItem { Name = "المخازن", Identifier = "warehouses", Icon = PackIconKind.HomeGroup });
             inventoryAndPurchases.Children.Add(new MenuItem { Name = "المخزن", Identifier = "inventory", Icon = PackIconKind.PackageVariant });
             inventoryAndPurchases.Children.Add(new MenuItem { Name = "شراء بضاعة", Identifier = "purchaseGoods", Icon = PackIconKind.Shopping });
             inventoryAndPurchases.Children.Add(new MenuItem { Name = "حركة بضاعة", Identifier = "goodsMovement", Icon = PackIconKind.Truck });
@@ -409,6 +410,9 @@ namespace POS.Views
                     break;
                 case "addPriceOffer":
                     newControl = new PriceQuotation_UserControl();
+                    break;
+                case "warehouses":
+                    newControl = new Warehouses_UserControl();
                     break;
                 case "inventory":
                     newControl = new Inventory_UserControl();

@@ -18,10 +18,16 @@ namespace POS
 
         public static IServiceProvider ServiceProvider { get; private set; }
         public static event Action CustomersChanged;
+        public static event Action WarehousesChanged;
 
         public static void NotifyCustomersChanged()
         {
             CustomersChanged?.Invoke();
+        }
+        
+        public static void NotifyWarehousesChanged()
+        {
+            WarehousesChanged?.Invoke();
         }
 
         //protected override void OnStartup(StartupEventArgs e)
@@ -48,6 +54,18 @@ namespace POS
 
         private void OnStartup(object sender, StartupEventArgs e)
         {
+            // Exception handler for detailed error messages
+            this.DispatcherUnhandledException += (s, ex) =>
+            {
+                MessageBox.Show(
+                    $"حدث خطأ في التطبيق:\n\n{ex.Exception.Message}\n\n" +
+                    $"التفاصيل الكاملة:\n{ex.Exception.ToString()}",
+                    "خطأ في التطبيق",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                ex.Handled = true;
+            };
+
             // base.OnStartup(e);
 
             // Resolve services

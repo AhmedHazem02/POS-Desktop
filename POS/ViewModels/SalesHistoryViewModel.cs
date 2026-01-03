@@ -10,12 +10,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace POS.ViewModels
 {
     public class SalesHistoryViewModel : INotifyPropertyChanged
     {
         private readonly AppDbContext _dbContext;
+        private CancellationTokenSource _searchCts;
+        private bool _isInitializing;
+        private bool _isInitialized;
+        private const int DebounceDelayMs = 250;
 
         // Main Search
         private string _invoiceSearchQuery;
@@ -24,8 +30,14 @@ namespace POS.ViewModels
             get => _invoiceSearchQuery;
             set
             {
+                if (_invoiceSearchQuery == value)
+                {
+                    return;
+                }
+
                 _invoiceSearchQuery = value;
                 OnPropertyChanged(nameof(InvoiceSearchQuery));
+                ScheduleFilters();
             }
         }
 
@@ -35,9 +47,14 @@ namespace POS.ViewModels
             get => _cashierSearchQuery;
             set
             {
+                if (_cashierSearchQuery == value)
+                {
+                    return;
+                }
+
                 _cashierSearchQuery = value;
                 OnPropertyChanged(nameof(CashierSearchQuery));
-                ApplyFilters();
+                ScheduleFilters();
             }
         }
 
@@ -97,6 +114,28 @@ namespace POS.ViewModels
             }
         }
 
+        private decimal _totalSales;
+        public decimal TotalSales
+        {
+            get => _totalSales;
+            set
+            {
+                _totalSales = value;
+                OnPropertyChanged(nameof(TotalSales));
+            }
+        }
+
+        private decimal _todaySales;
+        public decimal TodaySales
+        {
+            get => _todaySales;
+            set
+            {
+                _todaySales = value;
+                OnPropertyChanged(nameof(TodaySales));
+            }
+        }
+
         // Data Collections
         private ObservableCollection<Invoice> _invoicesList;
         public ObservableCollection<Invoice> InvoicesList
@@ -127,9 +166,28 @@ namespace POS.ViewModels
             get => _startDate;
             set
             {
+                if (_startDate == value)
+                {
+                    return;
+                }
+
                 _startDate = value;
                 OnPropertyChanged(nameof(StartDate));
-                ApplyFilters();
+                
+                // Validate date range
+                if (_startDate.HasValue && _endDate.HasValue && _startDate.Value > _endDate.Value)
+                {
+                    MessageBox.Show(
+                        "تاريخ البداية لا يمكن أن يكون أكبر من تاريخ النهاية",
+                        "خطأ في التاريخ",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning,
+                        MessageBoxResult.OK,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    return;
+                }
+                
+                ScheduleFilters();
             }
         }
 
@@ -139,9 +197,28 @@ namespace POS.ViewModels
             get => _endDate;
             set
             {
+                if (_endDate == value)
+                {
+                    return;
+                }
+
                 _endDate = value;
                 OnPropertyChanged(nameof(EndDate));
-                ApplyFilters();
+                
+                // Validate date range
+                if (_startDate.HasValue && _endDate.HasValue && _startDate.Value > _endDate.Value)
+                {
+                    MessageBox.Show(
+                        "تاريخ البداية لا يمكن أن يكون أكبر من تاريخ النهاية",
+                        "خطأ في التاريخ",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning,
+                        MessageBoxResult.OK,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    return;
+                }
+                
+                ScheduleFilters();
             }
         }
 
@@ -162,9 +239,14 @@ namespace POS.ViewModels
             get => _selectedWarehouse;
             set
             {
+                if (_selectedWarehouse == value)
+                {
+                    return;
+                }
+
                 _selectedWarehouse = value;
                 OnPropertyChanged(nameof(SelectedWarehouse));
-                ApplyFilters();
+                ScheduleFilters();
             }
         }
 
@@ -185,9 +267,14 @@ namespace POS.ViewModels
             get => _selectedPaymentMethod;
             set
             {
+                if (_selectedPaymentMethod == value)
+                {
+                    return;
+                }
+
                 _selectedPaymentMethod = value;
                 OnPropertyChanged(nameof(SelectedPaymentMethod));
-                ApplyFilters();
+                ScheduleFilters();
             }
         }
 
@@ -209,8 +296,10 @@ namespace POS.ViewModels
         public SalesHistoryViewModel()
         {
             _dbContext = new AppDbContext();
+            _isInitializing = true;
             InitializeData();
             InitializeCommands();
+            _ = InitializeAsync();
         }
 
         // Initialization
@@ -227,10 +316,21 @@ namespace POS.ViewModels
                 "بطاقة ائتمان",
                 "محفظة الكترونية"
             };
-            SelectedPaymentMethod = "الكل";
+            SelectedPaymentMethod = PaymentMethods.FirstOrDefault();
+        }
 
-            LoadWarehouses();
-            LoadInvoices();
+        public async Task InitializeAsync()
+        {
+            if (_isInitialized)
+            {
+                return;
+            }
+
+            _isInitialized = true;
+
+            await LoadWarehousesAsync();
+            _isInitializing = false;
+            await RunFiltersAsync();
         }
 
         private void InitializeCommands()
@@ -250,11 +350,15 @@ namespace POS.ViewModels
         }
 
         // Data Loading
-        private void LoadWarehouses()
+        private async Task LoadWarehousesAsync()
         {
             try
             {
-                var warehouses = _dbContext.Warehouses.ToList();
+                var warehouses = await _dbContext.Warehouses
+                    .AsNoTracking()
+                    .OrderBy(w => w.Name)
+                    .Select(w => new Warehouse { Id = w.Id, Name = w.Name })
+                    .ToListAsync();
                 Warehouses = new ObservableCollection<Warehouse>(warehouses);
                 
                 if (Warehouses.Any())
@@ -273,76 +377,128 @@ namespace POS.ViewModels
 
         private void LoadInvoices()
         {
-            try
-            {
-                var invoices = _dbContext.Invoices
-                    .Include(i => i.Customer)
-                    .Include(i => i.SaleProducts)
-                    .OrderByDescending(i => i.Date)
-                    .ToList();
-
-                InvoicesList = new ObservableCollection<Invoice>(invoices);
-                ApplyFilters();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"خطأ في تحميل الفواتير: {ex.Message}", "خطأ", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            _ = RunFiltersAsync();
         }
 
         // Filtering
         private void ApplyFilters()
         {
+            ScheduleFilters();
+        }
+
+        private void CancelPendingSearch()
+        {
+            if (_searchCts == null)
+            {
+                return;
+            }
+
+            _searchCts.Cancel();
+            _searchCts.Dispose();
+            _searchCts = null;
+        }
+
+        private CancellationTokenSource ResetSearchCts()
+        {
+            CancelPendingSearch();
+            _searchCts = new CancellationTokenSource();
+            return _searchCts;
+        }
+
+        private async void ScheduleFilters()
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            var cts = ResetSearchCts();
             try
             {
-                var allInvoices = _dbContext.Invoices
+                await Task.Delay(DebounceDelayMs, cts.Token);
+                await ApplyFiltersAsync(cts);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        private Task RunFiltersAsync()
+        {
+            if (_isInitializing)
+            {
+                return Task.CompletedTask;
+            }
+
+            var cts = ResetSearchCts();
+            return ApplyFiltersAsync(cts);
+        }
+
+        private IQueryable<Invoice> BuildFilteredQuery()
+        {
+            var query = _dbContext.Invoices
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(InvoiceSearchQuery))
+            {
+                query = query.Where(i => i.Number.Contains(InvoiceSearchQuery));
+            }
+
+            if (!string.IsNullOrWhiteSpace(CashierSearchQuery))
+            {
+                query = query.Where(i => i.CashierName != null && i.CashierName.Contains(CashierSearchQuery));
+            }
+
+            if (StartDate.HasValue)
+            {
+                query = query.Where(i => i.Date >= StartDate.Value.Date);
+            }
+
+            if (EndDate.HasValue)
+            {
+                var endOfDay = EndDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(i => i.Date <= endOfDay);
+            }
+
+            if (SelectedWarehouse != null && SelectedWarehouse.Id > 0)
+            {
+                query = query.Where(i => i.WarehouseId == SelectedWarehouse.Id);
+            }
+
+            var allPaymentMethod = PaymentMethods?.FirstOrDefault();
+            if (!string.IsNullOrEmpty(SelectedPaymentMethod) && SelectedPaymentMethod != allPaymentMethod)
+            {
+                query = query.Where(i => i.PaymentMethod == SelectedPaymentMethod);
+            }
+
+            return query;
+        }
+
+        private async Task ApplyFiltersAsync(CancellationTokenSource cts)
+        {
+            var token = cts.Token;
+            try
+            {
+                var filteredQuery = BuildFilteredQuery();
+
+                var filteredList = await filteredQuery
                     .Include(i => i.Customer)
-                    .Include(i => i.SaleProducts)
                     .OrderByDescending(i => i.Date)
-                    .AsQueryable();
+                    .ToListAsync(token);
 
-                // Filter by Invoice Number
-                if (!string.IsNullOrWhiteSpace(InvoiceSearchQuery))
+                if (token.IsCancellationRequested)
                 {
-                    allInvoices = allInvoices.Where(i => i.Number.Contains(InvoiceSearchQuery));
+                    return;
                 }
 
-                // Filter by Cashier Name
-                if (!string.IsNullOrWhiteSpace(CashierSearchQuery))
-                {
-                    allInvoices = allInvoices.Where(i => i.CashierName != null && i.CashierName.Contains(CashierSearchQuery));
-                }
-
-                // Filter by Date Range
-                if (StartDate.HasValue)
-                {
-                    allInvoices = allInvoices.Where(i => i.Date >= StartDate.Value);
-                }
-
-                if (EndDate.HasValue)
-                {
-                    var endOfDay = EndDate.Value.Date.AddDays(1).AddTicks(-1);
-                    allInvoices = allInvoices.Where(i => i.Date <= endOfDay);
-                }
-
-                // Filter by Warehouse
-                if (SelectedWarehouse != null && SelectedWarehouse.Id > 0)
-                {
-                    allInvoices = allInvoices.Where(i => i.WarehouseId == SelectedWarehouse.Id);
-                }
-
-                // Filter by Payment Method
-                if (!string.IsNullOrEmpty(SelectedPaymentMethod) && SelectedPaymentMethod != "الكل")
-                {
-                    allInvoices = allInvoices.Where(i => i.PaymentMethod == SelectedPaymentMethod);
-                }
-
-                var filteredList = allInvoices.ToList();
                 InvoicesList = new ObservableCollection<Invoice>(filteredList);
                 FilteredCount = filteredList.Count;
 
-                UpdateStatistics();
+                await UpdateStatisticsAsync(filteredQuery, filteredList, token);
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (Exception ex)
             {
@@ -351,48 +507,94 @@ namespace POS.ViewModels
             }
         }
 
-        private void UpdateStatistics()
+        private async Task UpdateStatisticsAsync(IQueryable<Invoice> filteredQuery, System.Collections.Generic.IReadOnlyCollection<Invoice> cachedList, CancellationToken token)
         {
-            if (InvoicesList == null || !InvoicesList.Any())
+            if (cachedList == null || cachedList.Count == 0)
             {
                 TotalInvoices = 0;
                 TotalAmount = 0;
                 AverageInvoice = 0;
                 TotalItems = 0;
+                TotalSales = 0;
+                TodaySales = 0;
                 return;
             }
 
-            TotalInvoices = InvoicesList.Count;
-            TotalAmount = InvoicesList.Sum(i => i.TotalPrice);
+            TotalInvoices = cachedList.Count;
+            TotalAmount = cachedList.Sum(i => i.TotalPrice);
             AverageInvoice = TotalInvoices > 0 ? TotalAmount / TotalInvoices : 0;
-            TotalItems = (int)InvoicesList.Sum(i => i.SaleProducts?.Sum(sp => sp.Quantity) ?? 0);
+
+            try
+            {
+                // Calculate total sales from all invoices in database
+                TotalSales = await _dbContext.Invoices
+                    .AsNoTracking()
+                    .SumAsync(i => i.TotalPrice, token);
+            }
+            catch (Exception)
+            {
+                TotalSales = 0;
+            }
+
+            try
+            {
+                // Calculate today's sales
+                var today = DateTime.Now.Date;
+                TodaySales = await _dbContext.Invoices
+                    .AsNoTracking()
+                    .Where(i => i.Date >= today && i.Date < today.AddDays(1))
+                    .SumAsync(i => i.TotalPrice, token);
+            }
+            catch (Exception)
+            {
+                TodaySales = 0;
+            }
+
+            try
+            {
+                // Get invoice IDs from cached list to avoid using filteredQuery
+                var invoiceIds = cachedList.Select(i => i.Id).ToList();
+                
+                var totalItems = await _dbContext.SaleProducts
+                    .AsNoTracking()
+                    .Where(sp => sp.InvoiceId.HasValue && invoiceIds.Contains(sp.InvoiceId.Value))
+                    .SumAsync(sp => (double?)sp.Quantity, token);
+
+                TotalItems = (int)(totalItems ?? 0);
+            }
+            catch (Exception)
+            {
+                TotalItems = 0;
+            }
         }
 
         // Command Execution
         private void ExecuteSearch()
         {
-            ApplyFilters();
+            _ = RunFiltersAsync();
         }
 
         private void ExecuteRefresh()
         {
-            LoadInvoices();
+            _ = RunFiltersAsync();
         }
 
         private void ExecuteClearFilters()
         {
+            _isInitializing = true;
             InvoiceSearchQuery = string.Empty;
             CashierSearchQuery = string.Empty;
             StartDate = DateTime.Now.AddMonths(-1);
             EndDate = DateTime.Now;
-            SelectedPaymentMethod = "الكل";
+            SelectedPaymentMethod = PaymentMethods?.FirstOrDefault();
             
             if (Warehouses != null && Warehouses.Any())
             {
                 SelectedWarehouse = Warehouses.First();
             }
 
-            ApplyFilters();
+            _isInitializing = false;
+            _ = RunFiltersAsync();
         }
 
         private void ExecuteViewInvoice(Invoice invoice)
@@ -406,7 +608,7 @@ namespace POS.ViewModels
                 dialog.ShowDialog();
                 
                 // Refresh after dialog closes
-                LoadInvoices();
+                _ = RunFiltersAsync();
             }
             catch (Exception ex)
             {
@@ -419,13 +621,32 @@ namespace POS.ViewModels
         {
             if (invoice == null) return;
 
+            _ = PrintInvoiceAsync(invoice.Id);
+        }
+
+        private async Task PrintInvoiceAsync(int invoiceId)
+        {
             try
             {
+                var invoice = await _dbContext.Invoices
+                    .AsNoTracking()
+                    .Include(i => i.Customer)
+                    .Include(i => i.SaleProducts)
+                        .ThenInclude(sp => sp.Product)
+                    .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+                if (invoice == null)
+                {
+                    MessageBox.Show("لم يتم العثور على الفاتورة.", "خطأ",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 PrintInvoice(invoice);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"خطأ في طباعة الفاتورة: {ex.Message}", "خطأ", 
+                MessageBox.Show($"خطأ في طباعة الفاتورة: {ex.Message}", "خطأ",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -436,8 +657,13 @@ namespace POS.ViewModels
             {
                 if (InvoicesList == null || !InvoicesList.Any())
                 {
-                    MessageBox.Show("لا توجد فواتير للتصدير", "تنبيه", 
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(
+                        "لا توجد فواتير للتصدير",
+                        "تنبيه",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning,
+                        MessageBoxResult.OK,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                     return;
                 }
 
@@ -451,6 +677,7 @@ namespace POS.ViewModels
                 {
                     var excelService = new POS.Infrustructure.Services.ExcelService();
                     
+                    // Export only the filtered data from InvoicesList
                     var exportData = InvoicesList.Select(i => new
                     {
                         رقم_الفاتورة = i.Number,
@@ -458,20 +685,31 @@ namespace POS.ViewModels
                         العميل = i.Customer?.Name ?? "غير محدد",
                         المبلغ_الإجمالي = i.TotalPrice,
                         طريقة_الدفع = i.PaymentMethod ?? "نقدي",
+                        الكاشير = i.CashierName ?? "غير محدد",
                         الحالة = i.Status ?? "مكتملة"
-                    });
+                    }).ToList();
 
                     var excelBytes = await excelService.ExportToExcelAsync(exportData, "فواتير المبيعات");
                     System.IO.File.WriteAllBytes(saveFileDialog.FileName, excelBytes);
                     
-                    MessageBox.Show("تم التصدير بنجاح!", "نجح", 
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(
+                        $"تم تصدير {exportData.Count} فاتورة بنجاح!",
+                        "نجح",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information,
+                        MessageBoxResult.OK,
+                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"خطأ في التصدير: {ex.Message}", "خطأ", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    $"خطأ في التصدير: {ex.Message}",
+                    "خطأ",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error,
+                    MessageBoxResult.OK,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
             }
         }
         
@@ -499,7 +737,7 @@ namespace POS.ViewModels
                 {
                     _dbContext.Invoices.Remove(SelectedInvoice);
                     _dbContext.SaveChanges();
-                    LoadInvoices();
+                    _ = RunFiltersAsync();
                     MessageBox.Show("تم حذف الفاتورة بنجاح", "نجح", 
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }

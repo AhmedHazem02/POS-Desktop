@@ -15,7 +15,6 @@ namespace POS.Dialogs.ViewModels
     public class AddWarehousesDialogViewModel : INotifyPropertyChanged
     {
         private bool? _result;
-
         public bool? Result
         {
             get => _result;
@@ -23,6 +22,39 @@ namespace POS.Dialogs.ViewModels
             {
                 _result = value;
                 OnPropertyChanged(nameof(Result));
+            }
+        }
+
+        private bool _isEdit;
+        public bool IsEdit
+        {
+            get => _isEdit;
+            set
+            {
+                _isEdit = value;
+                OnPropertyChanged(nameof(IsEdit));
+            }
+        }
+
+        private bool _isSaved;
+        public bool IsSaved
+        {
+            get => _isSaved;
+            set
+            {
+                _isSaved = value;
+                OnPropertyChanged(nameof(IsSaved));
+            }
+        }
+
+        private int _editWarehouseId;
+        public int EditWarehouseId
+        {
+            get => _editWarehouseId;
+            set
+            {
+                _editWarehouseId = value;
+                OnPropertyChanged(nameof(EditWarehouseId));
             }
         }
 
@@ -157,44 +189,82 @@ namespace POS.Dialogs.ViewModels
             }
         }
 
+        public void LoadWarehouseData(int warehouseId)
+        {
+            EditWarehouseId = warehouseId;
+            var warehouse = _dbContext.Warehouses.Find(warehouseId);
+            if (warehouse != null)
+            {
+                Name = warehouse.Name;
+                Location = warehouse.Location ?? string.Empty;
+                ImageSource = warehouse.Image;
+            }
+        }
+
         // Command methods
         private void Add(object parameter)
         {
-            CurrentState = DialogState.Add;
-
-            if (string.IsNullOrWhiteSpace(Name))
+            if (IsEdit)
             {
-                MessageBox.Show("يرجى توفير اسم المستودع.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                // Edit existing warehouse
+                if (string.IsNullOrWhiteSpace(Name))
+                {
+                    MessageBox.Show("يرجى توفير اسم المخزن.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var warehouseToUpdate = _dbContext.Warehouses.Find(EditWarehouseId);
+                if (warehouseToUpdate != null)
+                {
+                    warehouseToUpdate.Name = Name;
+                    warehouseToUpdate.Location = Location;
+                    if (!string.IsNullOrEmpty(ImageSource))
+                    {
+                        warehouseToUpdate.Image = SaveImage(ImageSource);
+                    }
+
+                    _dbContext.SaveChanges();
+                    IsSaved = true;
+                    App.NotifyWarehousesChanged();
+
+                    MessageBox.Show("تم تعديل المخزن بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
+                    System.Windows.Application.Current.Windows.OfType<Window>().SingleOrDefault(x => x.IsActive)?.Close();
+                }
             }
-
-            if (ItemList.Any(w => w.Name == Name))
+            else
             {
-                MessageBox.Show("اسم المستودع موجود بالفعل.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                // Add new warehouse
+                CurrentState = DialogState.Add;
+
+                if (string.IsNullOrWhiteSpace(Name))
+                {
+                    MessageBox.Show("يرجى توفير اسم المخزن.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                if (_dbContext.Warehouses.Any(w => w.Name == Name))
+                {
+                    MessageBox.Show("اسم المخزن موجود بالفعل.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Warehouse newWarehouse = new Warehouse
+                {
+                    Name = Name,
+                    Location = Location,
+                    Image = SaveImage(ImageSource)
+                };
+
+                _dbContext.Warehouses.Add(newWarehouse);
+                _dbContext.SaveChanges();
+                
+                ItemList.Add(newWarehouse);
+                IsSaved = true;
+                App.NotifyWarehousesChanged();
+
+                MessageBox.Show("تم إضافة المخزن بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.Application.Current.Windows.OfType<Window>().SingleOrDefault(x => x.IsActive)?.Close();
             }
-
-            // Create a new warehouse instance
-            Warehouse newWarehouse = new Warehouse
-            {
-                Name = Name,
-                Location = Location,
-                Image = SaveImage(ImageSource)
-            };
-
-            // Add the new warehouse to the DbContext
-            _dbContext.Warehouses.Add(newWarehouse);
-
-            // Save changes to the database
-            _dbContext.SaveChanges();
-
-            // Add the new warehouse to the ObservableCollection
-            ItemList.Add(newWarehouse);
-
-            // Clear the input fields
-            Name = string.Empty;
-            Location = string.Empty;
-            ImageSource = null;
         }
 
         private void Edit(object parameter)
@@ -228,6 +298,9 @@ namespace POS.Dialogs.ViewModels
                 SelectedItem.Name = Name;
                 SelectedItem.Location = Location;
                 //SelectedItem.Image = ImageSource;
+                
+                // Notify all ViewModels
+                App.NotifyWarehousesChanged();
             }
         }
         public string SaveImage(string imagePath)
@@ -297,6 +370,9 @@ namespace POS.Dialogs.ViewModels
 
                     // Remove the warehouse from the ObservableCollection
                     ItemList.Remove(SelectedItem);
+
+                    // Notify all ViewModels
+                    App.NotifyWarehousesChanged();
 
                     // Clear the input fields
                     Name = string.Empty;

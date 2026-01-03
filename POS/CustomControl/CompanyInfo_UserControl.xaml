@@ -1,348 +1,153 @@
-﻿<UserControl x:Class="POS.CustomControl.CompanyInfo_UserControl"
-                          xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<UserControl x:Class="POS.CustomControl.CompanyInfo_UserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:POS.CustomControl"
-               xmlns:fa="http://schemas.fontawesome.io/icons/" 
-             mc:Ignorable="d" 
-             MinWidth="800"
-             MinHeight="800">
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:validations="clr-namespace:POS.Validations"
+             mc:Ignorable="d" MinWidth="800" MinHeight="800">
+    
     <UserControl.Resources>
-       
-        <Style x:Key="IconButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource PrimaryTextColor}"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-
-        <!-- ModernTextBoxStyle -->
-        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="#F7F7F7"/>
-            <Setter Property="BorderBrush" Value="#DDDDDD"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="Padding" Value="8"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="ToolTip" Value="{Binding ErrorMessage}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
-          BorderBrush="{TemplateBinding BorderBrush}"
-          BorderThickness="{TemplateBinding BorderThickness}">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                    VerticalAlignment="Center"
-                    Padding="{TemplateBinding Padding}"
-                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
-                    Focusable="false"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="CustomButtonStyle" TargetType="Button">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="PART_Border"
-                     Cursor="Hand"
-             Background="{TemplateBinding Background}"
-             BorderBrush="{TemplateBinding BorderBrush}"
-             BorderThickness="{TemplateBinding BorderThickness}"
-                     
-             CornerRadius="{StaticResource AppCornerRadius}" Width="{Binding Width, FallbackValue=auto}" Padding="5, 0" MinWidth="{Binding MinWidth, FallbackValue=100}" Height="35" Margin="5, 0">
-                            <ContentPresenter x:Name="PART_ContentPresenter"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                                   TextElement.FontSize="14"
-                                   TextElement.FontFamily="{StaticResource Montserrat_Semibold}"
-                                   TextElement.FontStretch="Expanded"
-                           TextElement.Foreground="{TemplateBinding Foreground}" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="PART_Border" Property="Background" Value="#004FC4" />
-                                <Setter TargetName="PART_ContentPresenter" Property="TextElement.Foreground" Value="White" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="PART_Border" Property="Background" Value="DarkGray" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="PART_Border" Property="Opacity" Value="0.5" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="CustomLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0 10 0 10"/>
-            <Setter Property="FlowDirection" Value="RightToLeft"/>
-        </Style>
-        <Style x:Key="CustomInputStyle" TargetType="TextBox">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Margin" Value="0 0 0 10"/>
-            <Setter Property="Width" Value="150"/>
-            <Setter Property="FlowDirection" Value="LeftToRight"/>
-        </Style>
-        <Style x:Key="CustomDropdownStyle" TargetType="ComboBox">
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Margin" Value="0 0 0 10"/>
-            <Setter Property="Width" Value="150"/>
-            <Setter Property="FlowDirection" Value="LeftToRight"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Assets/UltraModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </UserControl.Resources>
-    <Border  FlowDirection="RightToLeft" Grid.Row="1" Margin="10" CornerRadius="15" Background="White" BorderThickness="2" BorderBrush="{StaticResource PrimaryBackgroundColor}">
-        <Grid >
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{StaticResource BackgroundGradientBrush}">
+        <Grid Margin="20">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="*"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Border Grid.Row="0" Background="#007ACC">
-
+            <Border Grid.Row="0" CornerRadius="20" Padding="28,20" Margin="0,0,0,20">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#1E40AF" Offset="0"/>
+                        <GradientStop Color="#0EA5E9" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel>
+                    <TextBlock Text="معلومات الشركة" FontSize="24" FontWeight="Bold" Foreground="White" FlowDirection="RightToLeft"/>
+                    <TextBlock Text="إعدادات بيانات الشركة والضرائب" FontSize="12" Foreground="#E0E7FF" Margin="0,4,0,0" FlowDirection="RightToLeft"/>
+                </StackPanel>
             </Border>
 
-            <!-- Content -->
-            <StackPanel Grid.Row="1" Margin="20">
-                <!-- Add New Category -->
-                <!-- First Row -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+            <!-- Form -->
+            <Border Grid.Row="1" Style="{StaticResource UltraModernCard}" Padding="32,28">
+                <StackPanel>
+                    <!-- Section 1: Basic Info -->
+                    <TextBlock Text="معلومات الشركة الأساسية" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Gray900Brush}" Margin="0,0,0,16" FlowDirection="RightToLeft"/>
+                    <Grid Margin="0,0,0,20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="16"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Add New Customer -->
-                    <StackPanel Grid.Column="0" Margin="10">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="اسم الشركة" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="500" FontSize="14" FontWeight="Bold" Height="40" 
-                                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Name}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Contact Name -->
-                    <StackPanel Grid.Column="1" Margin="10">
-                        <!-- Image Selector -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="الصورة" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <Button Content="تحديد صورة" Width="150" FontSize="16" FontWeight="Bold" Foreground="White" Background="#007ACC" Style="{StaticResource CustomButtonStyle}" Command="{Binding SelectImageCommand}"/>
-                                <!-- Bind the Source property of the Image to the ImageSource property in your view model -->
-                                <Image Source="{Binding ImageSource}" Width="50" Height="50" />
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </Grid>
-
-                <!-- Second Row -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Email -->
-                    <StackPanel Grid.Column="0" Margin="10">
-                        <!-- Email -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="البريد الإلكتروني" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Email}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Phone -->
-                    <StackPanel Grid.Column="1" Margin="10">
-
-                        <!-- Phone -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="الهاتف" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Phone}"/>
-                            </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock Text="اسم الشركة" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding CompanyName}" Style="{StaticResource UltraModernTextBox}"/>
                         </StackPanel>
 
-                    </StackPanel>
-
-                    <!-- Email -->
-                    <StackPanel Grid.Column="2" Margin="10">
-                        <!-- Address -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="العنوان" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Address}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-                    <!-- Phone -->
-                    <StackPanel Grid.Column="3" Margin="10">
-
-                        <!-- City -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="المدينة" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding City}"/>
-                            </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock Text="الاسم التجاري" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding TradeName}" Style="{StaticResource UltraModernTextBox}"/>
                         </StackPanel>
 
-
-                    </StackPanel>
-                </Grid>
-
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Email -->
-                    <StackPanel Grid.Column="0" Margin="10">
-
-                        <!-- Country -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="البلد" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Country}"/>
-                            </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="0">
+                            <TextBlock Text="الرقم الضريبي" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding TaxNumber}" Style="{StaticResource UltraModernTextBox}"/>
                         </StackPanel>
 
-                    </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="2">
+                            <TextBlock Text="السجل التجاري" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding CommercialRegister}" Style="{StaticResource UltraModernTextBox}"/>
+                        </StackPanel>
+                    </Grid>
 
-                    <!-- Phone -->
-                    <StackPanel Grid.Column="1" Margin="10">
+                    <!-- Section 2: Contact Info -->
+                    <TextBlock Text="معلومات الاتصال" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Gray900Brush}" Margin="0,0,0,16" FlowDirection="RightToLeft"/>
+                    <Grid Margin="0,0,0,20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="16"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <!-- Postal Code -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="الرمز البريدي" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding PostalCode}"/>
-                            </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock Text="الهاتف" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding Phone}" Style="{StaticResource UltraModernTextBox}"/>
                         </StackPanel>
 
-
-                    </StackPanel>
-
-                    <!-- Email -->
-                    <StackPanel Grid.Column="2" Margin="10">
-
-                        <!-- Website -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="الموقع الإلكتروني" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Website}"/>
-                            </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock Text="البريد الإلكتروني" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding Email}" Style="{StaticResource UltraModernTextBox}"/>
                         </StackPanel>
 
-                    </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
+                            <TextBlock Text="العنوان" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding Address}" Style="{StaticResource UltraModernTextBox}"/>
+                        </StackPanel>
+                    </Grid>
 
-                    <!-- Phone -->
-                    <StackPanel Grid.Column="3" Margin="10">
+                    <!-- Section 3: Logo -->
+                    <TextBlock Text="شعار الشركة" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Gray900Brush}" Margin="0,0,0,16" FlowDirection="RightToLeft"/>
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <!-- Notes -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="ملاحظات" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="250" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Notes}"/>
-                            </StackPanel>
+                        <Border Grid.Column="0" Width="120" Height="120" CornerRadius="16" BorderBrush="{StaticResource Gray300}" BorderThickness="2" Margin="0,0,20,0">
+                            <Image Source="{Binding Logo}" Stretch="Uniform"/>
+                        </Border>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Button Content="اختيار شعار" Style="{StaticResource UltraModernPrimaryButton}" Width="160" Command="{Binding SelectLogoCommand}"/>
+                            <TextBlock Text="الحجم الموصى به: 512×512 بكسل" FontSize="11" Foreground="{StaticResource Gray500}" Margin="0,8,0,0" FlowDirection="RightToLeft"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Section 4: Tax Settings -->
+                    <TextBlock Text="إعدادات الضرائب" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Gray900Brush}" Margin="0,0,0,16" FlowDirection="RightToLeft"/>
+                    <Grid Margin="0,0,0,28">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="نسبة الضريبة (%)" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                            <TextBox Text="{Binding TaxPercentage}" Style="{StaticResource UltraModernTextBox}"/>
                         </StackPanel>
 
-                    </StackPanel>
-                </Grid>
-       
-
-
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Email -->
-                    <StackPanel Grid.Column="0" Margin="10">
-
-                        <!-- Commercial Register -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="السجل التجاري" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="400" FontSize="14" FontWeight="Bold" Height="40" 
-Style="{StaticResource ModernTextBoxStyle}" Text="{Binding CommercialRegister}"/>
-                            </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                            <CheckBox Content="تضمين الضريبة في الأسعار" FontSize="14" Foreground="{StaticResource Gray700Brush}" 
+                                      IsChecked="{Binding IncludeTaxInPrice}" FlowDirection="RightToLeft" Margin="0,0,0,12"/>
                         </StackPanel>
+                    </Grid>
 
+                    <!-- Actions -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="حفظ التغييرات" Style="{StaticResource UltraModernSuccessButton}" Width="180" Command="{Binding SaveCommand}"/>
+                        <Button Content="إلغاء" Style="{StaticResource UltraModernDangerButton}" Width="140" Margin="12,0,0,0" Command="{Binding CancelCommand}"/>
                     </StackPanel>
-
-                    <!-- Phone -->
-                    <StackPanel Grid.Column="1" Margin="10">
-
-
-
-                        <!-- Tax Card -->
-                        <StackPanel Margin="10">
-                            <TextBlock Text="البطاقة الضريبية" FontSize="16" FontWeight="Bold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0 5">
-                                <TextBox Width="400" FontSize="14" FontWeight="Bold" Height="40" 
-                 Style="{StaticResource ModernTextBoxStyle}" Text="{Binding TaxCard}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                    </StackPanel>
-                </Grid>
-
-
-
-
-
-
-
-
-
-
-                <!-- Footer -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                  
-                    <StackPanel Orientation="Horizontal" Margin="0 5">
-                       
-
-                        <Button Content="تعديل" FontSize="16" Width="150" FontWeight="Bold" Background="Orange" Margin="10" 
-    Foreground="White" Command="{Binding EditCommand}" />
-                    </StackPanel>
-
-
-
                 </StackPanel>
-
-
-            </StackPanel>
-
-         
+            </Border>
         </Grid>
-    </Border>
-
+    </ScrollViewer>
 </UserControl>

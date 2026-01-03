@@ -120,7 +120,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Invoice Header Info -->
-                <Border Grid.Row="0" Background="#F8FAFC" Padding="20" Margin="10" CornerRadius="10">
+                <Border Grid.Row="0" Background="{StaticResource PrimaryBackgroundColor}" Padding="20" Margin="10" CornerRadius="10">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -130,23 +130,23 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="رقم الفاتورة" FontSize="13" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="16" FontWeight="Bold" Foreground="#1E293B"/>
+                            <TextBlock Text="رقم الفاتورة" FontSize="13" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryColor}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
-                            <TextBlock Text="التاريخ" FontSize="13" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <TextBlock Text="{Binding InvoiceDate, StringFormat='{}{0:yyyy/MM/dd HH:mm}'}" FontSize="16" FontWeight="Bold" Foreground="#1E293B"/>
+                            <TextBlock Text="التاريخ" FontSize="13" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding InvoiceDate, StringFormat='{}{0:yyyy/MM/dd HH:mm}'}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryColor}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="الكاشير" FontSize="13" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <TextBlock Text="{Binding CashierName}" FontSize="16" FontWeight="Bold" Foreground="#6366F1"/>
+                            <TextBlock Text="الكاشير" FontSize="13" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding CashierName}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Accent600Brush}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="3">
-                            <TextBlock Text="العميل" FontSize="13" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <TextBlock Text="{Binding CustomerName}" FontSize="16" FontWeight="Bold" Foreground="#059669"/>
+                            <TextBlock Text="العميل" FontSize="13" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding CustomerName}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Success600Brush}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -187,7 +187,7 @@
                         <DataGridTemplateColumn Header="الإجمالي" Width="1*" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Total, StringFormat={}{0:N2}}" FontWeight="Bold" Foreground="#059669"/>
+                                    <TextBlock Text="{Binding Total, StringFormat={}{0:N2}}" FontWeight="Bold" Foreground="{StaticResource Success600Brush}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -207,7 +207,7 @@
                 </DataGrid>
 
                 <!-- Invoice Summary -->
-                <Border Grid.Row="3" Background="#F8FAFC" Padding="20" Margin="10,0,10,10" CornerRadius="10">
+                <Border Grid.Row="3" Background="{StaticResource PrimaryBackgroundColor}" Padding="20" Margin="10,0,10,10" CornerRadius="10">
                     <Grid HorizontalAlignment="Right">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -221,30 +221,30 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="إجمالي الكمية:" FontSize="14" Foreground="#64748B" Margin="0,0,15,10"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="إجمالي الكمية:" FontSize="14" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,15,10"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TotalQuantity}" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
                         
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="المجموع الفرعي:" FontSize="14" Foreground="#64748B" Margin="0,0,15,10"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="المجموع الفرعي:" FontSize="14" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,15,10"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SubTotal}" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
                         
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="الضريبة:" FontSize="14" Foreground="#64748B" Margin="0,0,15,10"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="الضريبة:" FontSize="14" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,15,10"/>
                         <TextBlock Grid.Row="2" Grid.Column="1" FontSize="14" FontWeight="Bold" Margin="0,0,0,10">
                             <Run Text="{Binding TaxPercentage}"/><Run Text=" %"/>
                         </TextBlock>
                         
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="الخصم:" FontSize="14" Foreground="#64748B" Margin="0,0,15,10"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="الخصم:" FontSize="14" Foreground="{StaticResource TextSecondaryColor}" Margin="0,0,15,10"/>
                         <TextBlock Grid.Row="3" Grid.Column="1" FontSize="14" FontWeight="Bold" Margin="0,0,0,10">
                             <Run Text="{Binding DiscountPercentage}"/><Run Text=" %"/>
                         </TextBlock>
                         
-                        <Border Grid.Row="4" Grid.ColumnSpan="2" BorderThickness="0,2,0,0" BorderBrush="#E2E8F0" Padding="0,10,0,0">
+                        <Border Grid.Row="4" Grid.ColumnSpan="2" BorderThickness="0,2,0,0" BorderBrush="{StaticResource Neutral200Brush}" Padding="0,10,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="الإجمالي:" FontSize="16" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,15,0"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Total}" FontSize="18" FontWeight="Bold" Foreground="#059669"/>
+                                <TextBlock Grid.Column="0" Text="الإجمالي:" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryColor}" Margin="0,0,15,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Total}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource Success600Brush}"/>
                             </Grid>
                         </Border>
                     </Grid>

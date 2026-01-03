@@ -130,6 +130,119 @@ namespace POS.ViewModels
                 }
             }
         }
+
+        private string _cashierImagePath = "/Assets/pic/default-avatar.png";
+        public string CashierImagePath
+        {
+            get => _cashierImagePath;
+            set
+            {
+                if (_cashierImagePath != value)
+                {
+                    _cashierImagePath = value;
+                    OnPropertyChanged(nameof(CashierImagePath));
+                }
+            }
+        }
+
+        private string _barcodeSearchText;
+        public string BarcodeSearchText
+        {
+            get => _barcodeSearchText;
+            set
+            {
+                if (_barcodeSearchText != value)
+                {
+                    _barcodeSearchText = value;
+                    OnPropertyChanged(nameof(BarcodeSearchText));
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        SearchProductByBarcode(value);
+                    }
+                }
+            }
+        }
+
+        private string _scannedProductName = "لا يوجد منتج";
+        public string ScannedProductName
+        {
+            get => _scannedProductName;
+            set
+            {
+                if (_scannedProductName != value)
+                {
+                    _scannedProductName = value;
+                    OnPropertyChanged(nameof(ScannedProductName));
+                }
+            }
+        }
+
+        private double _scannedProductPrice;
+        public double ScannedProductPrice
+        {
+            get => _scannedProductPrice;
+            set
+            {
+                if (_scannedProductPrice != value)
+                {
+                    _scannedProductPrice = value;
+                    OnPropertyChanged(nameof(ScannedProductPrice));
+                }
+            }
+        }
+
+        private double _scannedProductStock;
+        public double ScannedProductStock
+        {
+            get => _scannedProductStock;
+            set
+            {
+                if (_scannedProductStock != value)
+                {
+                    _scannedProductStock = value;
+                    OnPropertyChanged(nameof(ScannedProductStock));
+                }
+            }
+        }
+
+        private ObservableCollection<Customer> _topCustomers;
+        public ObservableCollection<Customer> TopCustomers
+        {
+            get => _topCustomers;
+            set
+            {
+                if (_topCustomers != value)
+                {
+                    _topCustomers = value;
+                    OnPropertyChanged(nameof(TopCustomers));
+                }
+            }
+        }
+
+        public ICommand SearchProductCommand { get; private set; }
+        public ICommand SelectCustomerCommand { get; private set; }
+        public ICommand CancelInvoiceCommand { get; private set; }
+        
+        public double TaxAmount => (Tax / 100) * SubTotal;
+        public double DiscountAmount => Discount;
+        
+        private double _paidAmount;
+        public double PaidAmount
+        {
+            get => _paidAmount;
+            set
+            {
+                if (Math.Abs(_paidAmount - value) > 0.01)
+                {
+                    _paidAmount = value;
+                    OnPropertyChanged(nameof(PaidAmount));
+                    OnPropertyChanged(nameof(RemainingAmount));
+                }
+            }
+        }
+        
+        public double RemainingAmount => Math.Max(0, TotalAmount - PaidAmount);
+        
         private ObservableCollection<SaleProduct> _cartItemsList;
 
         public ObservableCollection<SaleProduct> CartItemsList
@@ -169,6 +282,7 @@ namespace POS.ViewModels
         private double _manualAmount;
         private string _billBreakdown;
         private ObservableCollection<CashBillItem> _cashBills;
+        private bool _isCashPaymentSelected = true;
 
         public ObservableCollection<CashBillItem> CashBills
         {
@@ -179,6 +293,19 @@ namespace POS.ViewModels
                 {
                     _cashBills = value;
                     OnPropertyChanged(nameof(CashBills));
+                }
+            }
+        }
+
+        public bool IsCashPaymentSelected
+        {
+            get => _isCashPaymentSelected;
+            set
+            {
+                if (_isCashPaymentSelected != value)
+                {
+                    _isCashPaymentSelected = value;
+                    OnPropertyChanged(nameof(IsCashPaymentSelected));
                 }
             }
         }
@@ -261,7 +388,7 @@ namespace POS.ViewModels
         {
             if (selectedCartItem != null)
             {
-                SelectedProduct = ProductList.FirstOrDefault(product => product.Id == selectedCartItem.ProductId && selectedCartItem.WarehouseId == SelectedWarehouse.Id);
+                SelectedProduct = ProductList.FirstOrDefault(product => product.Id == selectedCartItem.ProductId && selectedCartItem.WarehouseId == (SelectedWarehouse?.Id ?? 0));
                 //SelectedCategory = CategoryList.FirstOrDefault(category => category.Name == selectedCartItem.Category);
 
                 ItemName = selectedCartItem.Product.Name;
@@ -315,6 +442,8 @@ namespace POS.ViewModels
         public ICommand CompletePaymentCommand { get; }
         public ICommand CancelSaleCommand { get; }
         public ICommand RemoveCartItemCommand { get; }
+        public ICommand IncreaseCartItemCommand { get; }
+        public ICommand DecreaseCartItemCommand { get; }
         public ICommand CloseWindowCommand { get; }
         public ICommand PrintInvoiceCommand { get; }
         public POSViewModel() : base()
@@ -323,15 +452,22 @@ namespace POS.ViewModels
             BillNumber = GetNextInvoiceNumber(false);
             CartItemsList = new ObservableCollection<SaleProduct>();
             CartItemsList.CollectionChanged += CartItemsList_CollectionChanged;
-            CashierName = "الكاشير";
+            
+            // تحميل معلومات الكاشير من المستخدم الحالي
+            LoadCashierInfo();
+            
+            // تحميل أفضل العملاء
+            LoadTopCustomers();
+            
             InvoiceDate = DateTime.Now;
             CashBills = BuildCashBills();
             BillBreakdown = "لا توجد فئات مدفوعة";
+            
+            // Initialize Commands
             AddCommand = new RelayCommand(ExecuteAddCommand);
             AcceptCommand = new RelayCommand(ExecuteAcceptCommand);
             CancelCommand = new RelayCommand(ExecuteCancelCommand);
             DeleteCommand = new RelayCommand(ExecuteDeleteCommand);
-
             PaymentCommand = new RelayCommand(ExecutePayment);
             DeliveryCommand = new RelayCommand(ExecuteDelivery);
             SuspendBillCommand = new RelayCommand(ExecuteSuspendBillCommand);
@@ -341,8 +477,14 @@ namespace POS.ViewModels
             CompletePaymentCommand = new RelayCommand(ExecuteCompletePaymentCommand);
             CancelSaleCommand = new RelayCommand(ExecuteCancelSaleCommand);
             RemoveCartItemCommand = new RelayCommand(ExecuteRemoveCartItemCommand);
+            IncreaseCartItemCommand = new RelayCommand(ExecuteIncreaseCartItemCommand);
+            DecreaseCartItemCommand = new RelayCommand(ExecuteDecreaseCartItemCommand);
             CloseWindowCommand = new RelayCommand(ExecuteCloseWindowCommand);
             PrintInvoiceCommand = new RelayCommand(ExecutePrintInvoiceCommand);
+            CancelInvoiceCommand = new RelayCommand(ExecuteCancelInvoice);
+            SearchProductCommand = new RelayCommand(ExecuteSearchProduct);
+            SelectCustomerCommand = new RelayCommand(ExecuteSelectCustomer);
+            
             #region CartListEvents
             CartList_CurrentCellChangedCommand = new RelayCommand(ExecuteCartList_CurrentCellChangedCommand);
             CartList_SelectionChangedCommand = new RelayCommand(ExecuteCartList_SelectionChangedCommand);
@@ -351,6 +493,7 @@ namespace POS.ViewModels
             CartList_DataContextChangedCommand = new RelayCommand(ExecuteCartList_DataContextChangedCommand);
             CartList_SelectedCellsChangedCommand = new RelayCommand(ExecuteCartList_SelectedCellsChangedCommand);
             #endregion
+            
             PropertyChanged += OnInvoiceDetailsChanged;
             IsSale = true;
         }
@@ -476,12 +619,17 @@ namespace POS.ViewModels
             {
                 MessageBox.Show("لا توجد عناصر في السلة.", "تنبيه");
                 return;
-            }            if (!CanCompletePayment)
+            }
+
+            if (!CanCompletePayment)
             {
                 MessageBox.Show("لا يمكن إتمام البيع مع وجود باقي بدون اختيار عميل.", "تنبيه");
                 return;
             }
 
+            // تحديث المبلغ المدفوع
+            PaidAmount = Math.Min(AmountPaid, TotalAmount);
+            
             AddInvoiceWithSaleProducts();
             ClearPayment();
         }
@@ -505,6 +653,36 @@ namespace POS.ViewModels
             {
                 CartItemsList.Remove(item);
             }
+        }
+
+        private void ExecuteIncreaseCartItemCommand(object parameter)
+        {
+            UpdateCartItemQuantity(parameter as SaleProduct, 1);
+        }
+
+        private void ExecuteDecreaseCartItemCommand(object parameter)
+        {
+            UpdateCartItemQuantity(parameter as SaleProduct, -1);
+        }
+
+        private void UpdateCartItemQuantity(SaleProduct item, double delta)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            double newQuantity = item.Quantity + delta;
+            if (newQuantity <= 0)
+            {
+                if (CartItemsList.Contains(item))
+                {
+                    CartItemsList.Remove(item);
+                }
+                return;
+            }
+
+            item.Quantity = newQuantity;
         }
 
         private void ExecuteCloseWindowCommand(object parameter)
@@ -677,6 +855,33 @@ namespace POS.ViewModels
             return separator;
         }
 
+        private void ExecuteCancelInvoice(object parameter)
+        {
+            if (CartItemsList == null || CartItemsList.Count == 0)
+            {
+                MessageBox.Show("لا توجد عناصر في الفاتورة.", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                "هل أنت متأكد من إلغاء الفاتورة الحالية؟ سيتم حذف جميع المنتجات.",
+                "تأكيد الإلغاء",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                CartItemsList.Clear();
+                ClearPayment();
+                SelectedCustomer = null;
+                InvoiceNumber = GetNextInvoiceNumber(false);
+                OnPropertyChanged(nameof(TaxAmount));
+                OnPropertyChanged(nameof(DiscountAmount));
+                OnPropertyChanged(nameof(RemainingAmount));
+                MessageBox.Show("تم إلغاء الفاتورة بنجاح.", "إلغاء", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private void ClearPayment()
         {
             foreach (var bill in CashBills)
@@ -695,6 +900,13 @@ namespace POS.ViewModels
         {
             if (SelectedProduct != null && Quantity > 0 && SalePrice > 0)
             {
+                // التحقق من وجود مخزن محدد
+                if (SelectedWarehouse == null)
+                {
+                    MessageBox.Show("برجاء اختيار المخزن أولاً", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 // Check if the item already exists in the cart
                 SaleProduct existingCartItem = CartItemsList.FirstOrDefault(item => item.ProductId == SelectedProduct.Id && item.WarehouseId == SelectedWarehouse.Id);
 
@@ -802,12 +1014,113 @@ namespace POS.ViewModels
             Console.WriteLine("Delivery command executed");
         }
 
-
-
         private void ExecuteCancelBill(object obj)
         {
             // Put your cancel bill logic here
             Console.WriteLine("Cancel bill command executed");
+        }
+
+        /// <summary>
+        /// تحميل معلومات الكاشير الحالي من نظام المصادقة
+        /// </summary>
+        private void LoadCashierInfo()
+        {
+            try
+            {
+                var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent();
+                CashierName = currentUser?.Name?.Split('\\').LastOrDefault() ?? "الكاشير";
+                // يمكن تحميل الصورة من قاعدة البيانات بناءً على اسم المستخدم
+                CashierImagePath = "/Assets/pic/default-avatar.png";
+            }
+            catch
+            {
+                CashierName = "الكاشير";
+                CashierImagePath = "/Assets/pic/default-avatar.png";
+            }
+        }
+
+        /// <summary>
+        /// تحميل أفضل العملاء من قاعدة البيانات (الأكثر شراءً)
+        /// </summary>
+        private async void LoadTopCustomers()
+        {
+            try
+            {
+                var customers = await _dbContext.Customers
+                    .OrderByDescending(c => c.Invoices.Count)
+                    .Take(5)
+                    .ToListAsync();
+                
+                TopCustomers = new ObservableCollection<Customer>(customers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading customers: {ex.Message}");
+                TopCustomers = new ObservableCollection<Customer>();
+            }
+        }
+
+        /// <summary>
+        /// البحث عن منتج بواسطة الباركود أو الاسم
+        /// </summary>
+        private async void SearchProductByBarcode(string searchText)
+        {
+            try
+            {
+                var product = await _dbContext.Products
+                    .Include(p => p.PurchaseProducts)
+                    .FirstOrDefaultAsync(p => p.Barcode == searchText || p.Name.Contains(searchText));
+
+                if (product != null)
+                {
+                    ScannedProductName = product.Name;
+                    ScannedProductPrice = product.SalePrice;
+                    
+                    // حساب الكمية المتبقية من آخر عملية شراء
+                    var latestPurchase = product.PurchaseProducts?.OrderByDescending(p => p.PurchaseId).FirstOrDefault();
+                    ScannedProductStock = latestPurchase?.Quantity ?? 0;
+
+                    // إضافة المنتج للسلة تلقائياً
+                    SelectedProduct = product;
+                    ExecuteAcceptCommand(null);
+                }
+                else
+                {
+                    ScannedProductName = "لم يتم العثور على المنتج";
+                    ScannedProductPrice = 0;
+                    ScannedProductStock = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error searching product: {ex.Message}");
+                ScannedProductName = "خطأ في البحث";
+                ScannedProductPrice = 0;
+                ScannedProductStock = 0;
+            }
+        }
+
+        /// <summary>
+        /// تنفيذ أمر البحث عن منتج
+        /// </summary>
+        private void ExecuteSearchProduct(object obj)
+        {
+            if (!string.IsNullOrWhiteSpace(BarcodeSearchText))
+            {
+                SearchProductByBarcode(BarcodeSearchText);
+            }
+        }
+
+        /// <summary>
+        /// تحديد العميل من القائمة
+        /// </summary>
+        private void ExecuteSelectCustomer(object obj)
+        {
+            if (obj is Customer customer)
+            {
+                SelectedCustomer = customer;
+                CustomerSearchText = customer.Name;
+            }
         }
 
         private void AddInvoiceWithSaleProducts()

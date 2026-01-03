@@ -111,7 +111,7 @@
         </Grid.RowDefinitions>
         <controls:WindowHeader Grid.Row="0" HeaderTitle="اضافة مورد" />
         <Border Grid.Row="1" Margin="10" CornerRadius="15" Background="White" BorderThickness="2" BorderBrush="{StaticResource PrimaryBackgroundColor}">
-            <Grid Background="#F0F0F0">
+            <Grid Background="{StaticResource Neutral100Brush}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
@@ -119,7 +119,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
-                <Border Grid.Row="0" Background="#007ACC">
+                <Border Grid.Row="0" Background="{StaticResource Accent600Brush}">
 
                 </Border>
 
@@ -150,7 +150,7 @@ Style="{StaticResource ModernTextBoxStyle}" Text="{Binding Name}"/>
                             <StackPanel Margin="10">
                                 <TextBlock Text="الصورة" FontSize="16" FontWeight="Bold"/>
                                 <StackPanel Orientation="Horizontal" Margin="0 5">
-                                    <Button Content="تحديد صورة" Width="150" FontSize="16" FontWeight="Bold" Foreground="White" Background="#007ACC" Style="{StaticResource CustomButtonStyle}" Command="{Binding SelectImageCommand}"/>
+                                    <Button Content="تحديث صورة" Width="150" FontSize="16" FontWeight="Bold" Foreground="White" Background="{StaticResource Accent600Brush}" Style="{StaticResource CustomButtonStyle}" Command="{Binding SelectImageCommand}"/>
                                     <!-- Bind the Source property of the Image to the ImageSource property in your view model -->
                                     <Image Source="{Binding ImageSource}" Width="50" Height="50" />
                                 </StackPanel>

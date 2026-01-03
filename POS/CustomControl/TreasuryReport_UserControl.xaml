@@ -4,180 +4,151 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:validations="clr-namespace:POS.Validations"
-             mc:Ignorable="d"
-             MinWidth="900"
-             MinHeight="700"
-             FontFamily="Segoe UI"
-             FlowDirection="RightToLeft"
-             UseLayoutRounding="True"
-             SnapsToDevicePixels="True">
-
+             mc:Ignorable="d" MinWidth="800" MinHeight="800">
+    
     <UserControl.Resources>
-        <validations:TransactionTypeToArabicConverter x:Key="TransactionTypeToArabicConverter" />
-        <Style x:Key="ReportCard" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16"/>
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="#E5E7EB" BlurRadius="12" ShadowDepth="1" Opacity="0.35"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#475569"/>
-            <Setter Property="Margin" Value="0,0,0,6"/>
-        </Style>
-
-        <Style x:Key="CompactInput" TargetType="Control">
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="FontSize" Value="13"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Assets/UltraModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <validations:IndexPlusOneConverter x:Key="IndexPlusOneConverter"/>
+        </ResourceDictionary>
     </UserControl.Resources>
 
-    <Border FlowDirection="RightToLeft"
-            Margin="10"
-            CornerRadius="16"
-            Background="#F8FAFC"
-            BorderThickness="1"
-            BorderBrush="#E2E8F0"
-            Padding="16">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource FadeInAnimation}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
 
-            <!-- Header -->
-            <StackPanel Grid.Row="0" Margin="4,0,4,12">
-                <TextBlock Text="تقرير الخزينة" FontSize="22" FontWeight="Bold" Foreground="#0F172A"/>
-                <TextBlock Text="ملخص حركة الوارد والصادر خلال الفترة المحددة"
-                           FontSize="12"
-                           Foreground="#64748B"
-                           Margin="0,4,0,0"/>
+    <Grid Background="{StaticResource BackgroundGradientBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" CornerRadius="20" Margin="20,20,20,16" Padding="32,24">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#047857" Offset="0"/>
+                    <GradientStop Color="#10B981" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel>
+                <TextBlock Text="تقرير الخزينة" FontSize="28" FontWeight="Bold" Foreground="White" FlowDirection="RightToLeft"/>
+                <TextBlock Text="تقرير شامل للإيرادات والمصروفات" FontSize="13" Foreground="#D1FAE5" Margin="0,4,0,0" FlowDirection="RightToLeft"/>
             </StackPanel>
+        </Border>
 
-            <!-- Filters -->
-            <Border Grid.Row="1" Style="{StaticResource ReportCard}" Margin="0,0,0,12">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+        <!-- Stats Cards -->
+        <Grid Grid.Row="1" Margin="20,0,20,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                        <TextBlock Text="نوع الحركة" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding TransactionTypes}"
-                                  SelectedItem="{Binding SelectedTransactionType}"
-                                  Style="{StaticResource CompactInput}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
-                        <TextBlock Text="من تاريخ" Style="{StaticResource FieldLabel}"/>
-                        <DatePicker SelectedDate="{Binding StartDate}"
-                                    Style="{StaticResource CompactInput}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2" Margin="0,0,12,0">
-                        <TextBlock Text="إلى تاريخ" Style="{StaticResource FieldLabel}"/>
-                        <DatePicker SelectedDate="{Binding EndDate}"
-                                    Style="{StaticResource CompactInput}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
-                        <Button Content="بحث"
-                                Margin="0,0,8,0"
-                                Padding="18,6"
-                                Background="#2563EB"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Command="{Binding RefreshCommand}"/>
-                        <Button Content="مسح"
-                                Padding="18,6"
-                                Background="#E11D48"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Command="{Binding ClearFiltersCommand}"/>
-                    </StackPanel>
-                </Grid>
+            <Border Grid.Column="0" Style="{StaticResource UltraModernCard}" Padding="20,18">
+                <StackPanel>
+                    <TextBlock Text="إجمالي الإيرادات" FontSize="12" Foreground="{StaticResource Gray600}" FlowDirection="RightToLeft"/>
+                    <TextBlock Text="{Binding TotalIncome}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource Success600Brush}" Margin="0,8,0,0"/>
+                </StackPanel>
             </Border>
 
-            <!-- Summary -->
-            <UniformGrid Grid.Row="2" Columns="3" Margin="0,0,0,12">
-                <Border Style="{StaticResource ReportCard}" Margin="0,0,8,0">
-                    <StackPanel>
-                        <TextBlock Text="إجمالي الوارد" FontSize="12" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding TotalIncome, StringFormat={}{0:N2} جنيه}"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#16A34A"
-                                   Margin="0,6,0,0"/>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource ReportCard}" Margin="0,0,8,0">
-                    <StackPanel>
-                        <TextBlock Text="إجمالي الصادر" FontSize="12" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding TotalOutcome, StringFormat={}{0:N2} جنيه}"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#DC2626"
-                                   Margin="0,6,0,0"/>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource ReportCard}">
-                    <StackPanel>
-                        <TextBlock Text="صافي الحركة" FontSize="12" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding NetBalance, StringFormat={}{0:N2} جنيه}"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#0F172A"
-                                   Margin="0,6,0,0"/>
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
+            <Border Grid.Column="2" Style="{StaticResource UltraModernCard}" Padding="20,18">
+                <StackPanel>
+                    <TextBlock Text="إجمالي المصروفات" FontSize="12" Foreground="{StaticResource Gray600}" FlowDirection="RightToLeft"/>
+                    <TextBlock Text="{Binding TotalExpenses}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource Danger600Brush}" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
 
-            <!-- Table -->
-            <Border Grid.Row="3" Style="{StaticResource ReportCard}" Padding="0">
-                <DataGrid ItemsSource="{Binding CashEntries}"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          CanUserAddRows="False"
-                          CanUserDeleteRows="False"
-                          HeadersVisibility="Column"
-                          RowHeight="34"
-                          FontSize="12"
-                          Background="White"
-                          GridLinesVisibility="Horizontal">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="التاريخ"
-                                            Binding="{Binding CreatedDate, StringFormat='{}{0:yyyy/MM/dd}'}"
-                                            Width="120"/>
-                        <DataGridTextColumn Header="الوصف"
-                                            Binding="{Binding CashName}"
-                                            Width="2*"/>
-                        <DataGridTemplateColumn Header="النوع" Width="110">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Type, Converter={StaticResource TransactionTypeToArabicConverter}}"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="المبلغ"
-                                            Binding="{Binding Amount, StringFormat={}{0:N2}}"
-                                            Width="120"/>
-                        <DataGridTextColumn Header="العملة"
-                                            Binding="{Binding Currency}"
-                                            Width="80"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+            <Border Grid.Column="4" Style="{StaticResource UltraModernCard}" Padding="20,18">
+                <StackPanel>
+                    <TextBlock Text="صافي الربح" FontSize="12" Foreground="{StaticResource Gray600}" FlowDirection="RightToLeft"/>
+                    <TextBlock Text="{Binding NetProfit}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource Primary600Brush}" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="6" Style="{StaticResource UltraModernCard}" Padding="20,18">
+                <StackPanel>
+                    <TextBlock Text="رصيد الخزينة" FontSize="12" Foreground="{StaticResource Gray600}" FlowDirection="RightToLeft"/>
+                    <TextBlock Text="{Binding Balance}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource Accent600Brush}" Margin="0,8,0,0"/>
+                </StackPanel>
             </Border>
         </Grid>
-    </Border>
+
+        <!-- Filters -->
+        <Border Grid.Row="2" Style="{StaticResource UltraModernCard}" Margin="20,0,20,16" Padding="24,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="من تاريخ" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                    <DatePicker SelectedDate="{Binding DateFrom}" Style="{StaticResource UltraModernDatePicker}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="إلى تاريخ" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Gray700Brush}" Margin="0,0,0,8" FlowDirection="RightToLeft"/>
+                    <DatePicker SelectedDate="{Binding DateTo}" Style="{StaticResource UltraModernDatePicker}"/>
+                </StackPanel>
+
+                <Button Grid.Column="4" Content="إنشاء التقرير" Style="{StaticResource UltraModernSuccessButton}" 
+                        Width="160" VerticalAlignment="Bottom" Command="{Binding GenerateReportCommand}"/>
+            </Grid>
+        </Border>
+
+        <!-- Transactions DataGrid -->
+        <Border Grid.Row="3" Style="{StaticResource UltraModernCard}" Margin="20,0,20,20" Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="{StaticResource Gray50}" Padding="24,16" BorderBrush="{StaticResource Gray200}" BorderThickness="0,0,0,1">
+                    <TextBlock Text="تفاصيل المعاملات" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Gray900Brush}" FlowDirection="RightToLeft"/>
+                </Border>
+
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Transactions}" Style="{StaticResource UltraModernDataGrid}"
+                          AutoGenerateColumns="False" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#" Width="60" 
+                                            Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Converter={StaticResource IndexPlusOneConverter}}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Foreground" Value="{StaticResource Gray500}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="التاريخ" Width="1.2*" Binding="{Binding Date, StringFormat='{}{0:dd/MM/yyyy}'}"/>
+                        <DataGridTextColumn Header="الوصف" Width="3*" Binding="{Binding Description}"/>
+                        <DataGridTextColumn Header="النوع" Width="1.2*" Binding="{Binding Type}"/>
+                        <DataGridTextColumn Header="المبلغ" Width="1.5*" Binding="{Binding Amount}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
 </UserControl>

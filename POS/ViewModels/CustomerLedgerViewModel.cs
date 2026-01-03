@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ClosedXML.Excel;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using POS.Application.Contracts.Services;
 using POS.Domain.Models;
@@ -34,6 +35,7 @@ namespace POS.ViewModels
         private readonly AsyncRelayCommand _clearFiltersCommand;
         private readonly AsyncRelayCommand _recordPaymentCommand;
         private readonly AsyncRelayCommand _loadNextPageCommand;
+        private readonly AsyncRelayCommand _exportCommand;
 
         public CustomerLedgerViewModel()
         {
@@ -44,6 +46,7 @@ namespace POS.ViewModels
             _clearFiltersCommand = new AsyncRelayCommand(ClearFiltersAsync, () => !IsBusy);
             _recordPaymentCommand = new AsyncRelayCommand(RecordPaymentAsync, () => !IsBusy && CanRecordPayment);
             _loadNextPageCommand = new AsyncRelayCommand(LoadNextPageAsync, () => !IsBusy && HasMore);
+            _exportCommand = new AsyncRelayCommand(ExecuteExportAsync, () => !IsBusy && HasLedgerEntries);
 
             PaymentMethods = new ObservableCollection<string>
             {
@@ -69,8 +72,16 @@ namespace POS.ViewModels
                 {
                     _selectedCustomer = value;
                     OnPropertyChanged(nameof(SelectedCustomer));
+                    OnPropertyChanged(nameof(ShowSelectCustomer));
+                    OnPropertyChanged(nameof(ShowEmptyState));
                     ClearLedger();
                     UpdateCommandStates();
+                    
+                    // Auto-load ledger when customer is selected
+                    if (_selectedCustomer != null && _isInitialized)
+                    {
+                        _ = LoadLedgerPageAsync(reset: true);
+                    }
                 }
             }
         }
@@ -83,6 +94,10 @@ namespace POS.ViewModels
             {
                 _ledgerEntries = value;
                 OnPropertyChanged(nameof(LedgerEntries));
+                OnPropertyChanged(nameof(HasLedgerEntries));
+                OnPropertyChanged(nameof(ShowEmptyState));
+                OnPropertyChanged(nameof(TotalPayments));
+                OnPropertyChanged(nameof(TotalPurchases));
             }
         }
 
@@ -124,9 +139,30 @@ namespace POS.ViewModels
                 {
                     _currentBalance = value;
                     OnPropertyChanged(nameof(CurrentBalance));
+                    OnPropertyChanged(nameof(Balance));
                 }
             }
         }
+
+        // Computed properties for statistics
+        public string TotalPayments => (LedgerEntries?.Sum(e => e.Credit) ?? 0).ToString("N2") + " جنيه";
+        public string TotalPurchases => (LedgerEntries?.Sum(e => e.Debit) ?? 0).ToString("N2") + " جنيه";
+        public string Balance
+        {
+            get
+            {
+                // Balance = Debit - Credit (what customer owes us - what they paid)
+                // Positive = customer owes us (له علينا)
+                // Negative = we owe customer (لنا عليه)
+                if (CurrentBalance > 0)
+                    return $"{CurrentBalance:N2} جنيه (له علينا)";
+                else if (CurrentBalance < 0)
+                    return $"{Math.Abs(CurrentBalance):N2} جنيه (لنا عليه)";
+                else
+                    return "0.00 جنيه (متساوي)";
+            }
+        }
+
 
         private double _paymentAmount;
         public double PaymentAmount
@@ -200,6 +236,8 @@ namespace POS.ViewModels
                     _isBusy = value;
                     OnPropertyChanged(nameof(IsBusy));
                     OnPropertyChanged(nameof(IsNotBusy));
+                    OnPropertyChanged(nameof(ShowEmptyState));
+                    OnPropertyChanged(nameof(ShowSelectCustomer));
                     UpdateCommandStates();
                 }
             }
@@ -266,6 +304,10 @@ namespace POS.ViewModels
         }
 
         public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+        public bool HasCustomers => Customers?.Count > 0;
+        public bool HasLedgerEntries => LedgerEntries?.Count > 0;
+        public bool ShowEmptyState => !IsBusy && SelectedCustomer != null && !HasLedgerEntries;
+        public bool ShowSelectCustomer => !IsBusy && SelectedCustomer == null && HasCustomers;
 
         public bool CanRecordPayment =>
             SelectedCustomer != null
@@ -277,6 +319,7 @@ namespace POS.ViewModels
         public ICommand ClearFiltersCommand => _clearFiltersCommand;
         public ICommand RecordPaymentCommand => _recordPaymentCommand;
         public ICommand LoadNextPageCommand => _loadNextPageCommand;
+        public ICommand ExportCommand => _exportCommand;
 
         public async Task InitializeAsync()
         {
@@ -322,7 +365,10 @@ namespace POS.ViewModels
                 var term = searchText?.Trim();
                 if (!string.IsNullOrWhiteSpace(term))
                 {
-                    query = query.Where(c => c.Name.Contains(term) || c.Phone.Contains(term));
+                    var pattern = $"%{term}%";
+                    query = query.Where(c => 
+                        EF.Functions.Like(c.Name ?? "", pattern) || 
+                        EF.Functions.Like(c.Phone ?? "", pattern));
                 }
 
                 var customers = await query
@@ -340,6 +386,8 @@ namespace POS.ViewModels
 
                 Customers = new ObservableCollection<CustomerLookup>(customers);
                 OnPropertyChanged(nameof(Customers));
+                OnPropertyChanged(nameof(HasCustomers));
+                OnPropertyChanged(nameof(ShowSelectCustomer));
 
                 if (preserveSelection && SelectedCustomer != null)
                 {
@@ -552,7 +600,175 @@ namespace POS.ViewModels
             }
         }
 
+        private async Task ExecuteExportAsync()
+        {
+            if (!HasLedgerEntries || SelectedCustomer == null)
+            {
+                MessageBox.Show("لا توجد معاملات للتصدير.", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "Excel Files|*.xlsx|CSV Files|*.csv",
+                FileName = $"كشف_حساب_{SelectedCustomer.Name}_{DateTime.Now:yyyyMMdd}"
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            try
+            {
+                IsBusy = true;
+                BusyMessage = "جار تصدير البيانات...";
+
+                var extension = System.IO.Path.GetExtension(dialog.FileName).ToLower();
+                
+                if (extension == ".xlsx")
+                    await ExportToExcelAsync(dialog.FileName);
+                else if (extension == ".csv")
+                    await ExportToCsvAsync(dialog.FileName);
+
+                MessageBox.Show("تم التصدير بنجاح!", "نجح", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"حدث خطأ أثناء التصدير: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BusyMessage = string.Empty;
+                IsBusy = false;
+            }
+        }
+
+        private async Task ExportToExcelAsync(string filePath)
+        {
+            await Task.Run(() =>
+            {
+                using var workbook = new ClosedXML.Excel.XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("كشف الحساب");
+
+                // RTL
+                worksheet.RightToLeft = true;
+
+                // Header
+                worksheet.Cell(1, 1).Value = $"كشف حساب: {SelectedCustomer?.Name}";
+                worksheet.Cell(1, 1).Style.Font.Bold = true;
+                worksheet.Cell(1, 1).Style.Font.FontSize = 16;
+                worksheet.Range(1, 1, 1, 6).Merge();
+
+                worksheet.Cell(2, 1).Value = $"التاريخ: {DateTime.Now:dd/MM/yyyy}";
+                if (StartDate.HasValue || EndDate.HasValue)
+                {
+                    var period = StartDate.HasValue && EndDate.HasValue
+                        ? $"من {StartDate:dd/MM/yyyy} إلى {EndDate:dd/MM/yyyy}"
+                        : StartDate.HasValue
+                            ? $"من {StartDate:dd/MM/yyyy}"
+                            : $"إلى {EndDate:dd/MM/yyyy}";
+                    worksheet.Cell(3, 1).Value = $"الفترة: {period}";
+                }
+
+                // Column headers
+                var headerRow = 5;
+                worksheet.Cell(headerRow, 1).Value = "#";
+                worksheet.Cell(headerRow, 2).Value = "التاريخ";
+                worksheet.Cell(headerRow, 3).Value = "الوصف";
+                worksheet.Cell(headerRow, 4).Value = "مدين";
+                worksheet.Cell(headerRow, 5).Value = "دائن";
+                worksheet.Cell(headerRow, 6).Value = "الرصيد";
+
+                var headerRange = worksheet.Range(headerRow, 1, headerRow, 6);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#3B82F6");
+                headerRange.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+                headerRange.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+
+                // Data
+                var row = headerRow + 1;
+                var index = 1;
+                foreach (var entry in LedgerEntries)
+                {
+                    worksheet.Cell(row, 1).Value = index++;
+                    worksheet.Cell(row, 2).Value = entry.Date.ToString("dd/MM/yyyy");
+                    worksheet.Cell(row, 3).Value = entry.Description ?? "";
+                    worksheet.Cell(row, 4).Value = entry.Debit;
+                    worksheet.Cell(row, 5).Value = entry.Credit;
+                    worksheet.Cell(row, 6).Value = entry.RunningBalance;
+
+                    // Color for balance
+                    if (entry.RunningBalance > 0)
+                        worksheet.Cell(row, 6).Style.Font.FontColor = ClosedXML.Excel.XLColor.Red;
+                    else if (entry.RunningBalance < 0)
+                        worksheet.Cell(row, 6).Style.Font.FontColor = ClosedXML.Excel.XLColor.Green;
+
+                    row++;
+                }
+
+                // Summary
+                row++;
+                worksheet.Cell(row, 1).Value = "الإجماليات";
+                worksheet.Cell(row, 1).Style.Font.Bold = true;
+                worksheet.Cell(row, 4).Value = LedgerEntries.Sum(e => e.Debit);
+                worksheet.Cell(row, 4).Style.Font.Bold = true;
+                worksheet.Cell(row, 5).Value = LedgerEntries.Sum(e => e.Credit);
+                worksheet.Cell(row, 5).Style.Font.Bold = true;
+                worksheet.Cell(row, 6).Value = CurrentBalance;
+                worksheet.Cell(row, 6).Style.Font.Bold = true;
+
+                if (CurrentBalance > 0)
+                    worksheet.Cell(row, 6).Style.Font.FontColor = ClosedXML.Excel.XLColor.Red;
+                else if (CurrentBalance < 0)
+                    worksheet.Cell(row, 6).Style.Font.FontColor = ClosedXML.Excel.XLColor.Green;
+
+                // Auto-fit columns
+                worksheet.Columns().AdjustToContents();
+
+                workbook.SaveAs(filePath);
+            });
+        }
+
+        private async Task ExportToCsvAsync(string filePath)
+        {
+            await Task.Run(() =>
+            {
+                using var writer = new System.IO.StreamWriter(filePath, false, System.Text.Encoding.UTF8);
+                
+                // UTF-8 BOM for Excel
+                writer.WriteLine($"# كشف حساب: {SelectedCustomer?.Name}");
+                writer.WriteLine($"# التاريخ: {DateTime.Now:dd/MM/yyyy}");
+                
+                if (StartDate.HasValue || EndDate.HasValue)
+                {
+                    var period = StartDate.HasValue && EndDate.HasValue
+                        ? $"من {StartDate:dd/MM/yyyy} إلى {EndDate:dd/MM/yyyy}"
+                        : StartDate.HasValue
+                            ? $"من {StartDate:dd/MM/yyyy}"
+                            : $"إلى {EndDate:dd/MM/yyyy}";
+                    writer.WriteLine($"# الفترة: {period}");
+                }
+                writer.WriteLine();
+
+                // Header
+                writer.WriteLine("#,التاريخ,الوصف,مدين,دائن,الرصيد");
+
+                // Data
+                var index = 1;
+                foreach (var entry in LedgerEntries)
+                {
+                    var description = entry.Description?.Replace(",", "،") ?? "";
+                    writer.WriteLine($"{index},{entry.Date:dd/MM/yyyy},{description},{entry.Debit},{entry.Credit},{entry.RunningBalance}");
+                    index++;
+                }
+
+                // Summary
+                writer.WriteLine();
+                writer.WriteLine($"الإجماليات,,,{LedgerEntries.Sum(e => e.Debit)},{LedgerEntries.Sum(e => e.Credit)},{CurrentBalance}");
+            });
+        }
+
         private void ClearLedger()
+
         {
             LedgerEntries = new ObservableCollection<CustomerLedgerEntry>();
             CurrentBalance = 0;
@@ -567,6 +783,7 @@ namespace POS.ViewModels
             _clearFiltersCommand.RaiseCanExecuteChanged();
             _recordPaymentCommand.RaiseCanExecuteChanged();
             _loadNextPageCommand.RaiseCanExecuteChanged();
+            _exportCommand.RaiseCanExecuteChanged();
         }
 
         public void Dispose()

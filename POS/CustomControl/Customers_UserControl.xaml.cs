@@ -1,3 +1,4 @@
+using POS.Domain.Models;
 using POS.ViewModels;
 using POS.Views;
 using System.Windows;
@@ -10,13 +11,31 @@ namespace POS.CustomControl
     /// </summary>
     public partial class Customers_UserControl : UserControl
     {
-        private readonly AddCustomersDialogViewModel viewModel;
+        private readonly CustomersPageViewModel viewModel;
 
         public Customers_UserControl()
         {
             InitializeComponent();
-            viewModel = new AddCustomersDialogViewModel();
+            viewModel = new CustomersPageViewModel();
             DataContext = viewModel;
+            Loaded += Customers_UserControl_Loaded;
+            Unloaded += Customers_UserControl_Unloaded;
+        }
+
+        private void Customers_UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            App.CustomersChanged += OnCustomersChanged;
+            viewModel.RefreshItems();
+        }
+
+        private void Customers_UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            App.CustomersChanged -= OnCustomersChanged;
+        }
+
+        private void OnCustomersChanged()
+        {
+            viewModel.RefreshItems();
         }
 
         private async void AddCustomer_Click(object sender, RoutedEventArgs e)
